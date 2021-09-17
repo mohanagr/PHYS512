@@ -73,7 +73,7 @@ def lakeshore(V, data, frac=0.8):
 
 if __name__ == "__main__":
 
-    data = np.loadtxt("../input/phys512/lakeshore.txt")
+    data = np.loadtxt("./lakeshore.txt")
 
     # generate 50 random x values to simulate the input -- points we'd like to know the value of function at
     xmin = dat[:,1].min() 
