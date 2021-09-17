@@ -3,7 +3,6 @@ import numpy as np # linear algebra
 
 # in this question analytical derivative is used as the function form provided, and it's easy to differentiate
 
-
 # what to do when function form is not known/ or when not easy to differentiate is handled in Question 2
 
 def get_derivative(func, x0, h):
@@ -25,21 +24,18 @@ def diff(func, func5, x0):
     func5: python function for 5th derivative of input
     x0: float where value required
     '''
-    
+
+    y0 = func(x0)
+    y5 = func5(x0)
     eps_m = 2**-52 #machine precision for 64 bit CPU -- 52 bits of mantissa
-    optimal_dx = (45*0.25*eps_m*func(x0)/func5(x0))**(1/5)
+
+    optimal_dx = (45*0.25*eps_m*y0/y5)**(1/5)
+
     print(f"optimal value of dx is {optimal_dx}")
-    
-    def get_err(fx0, h):
-        
-        
-        err = 1.5*eps_m/h + h**4/30   # this simplies to eps_m**(4/5) * f**(4/5) * f'''''(1/5)
-        
-        return err
+
+    exp_err = eps_m**(4/5) * y0**(4/5) * y5**(1/5)
     
     df = get_derivative(func, x0, optimal_dx)
-    
-    exp_err = get_err(func(x0), optimal_dx)
     
     return [df, exp_err]
 
@@ -54,7 +50,7 @@ if __name__ == '__main__':
 
     df, err = diff(func,func5,x0)
 
-    true_df = func(1)
+    true_df = func(x0)
     exp_err = np.abs(true_df - df)   # derivative of exp(x) = exp(x)
 
     print(f"The expected error is {exp_err:5.2e} and the predicted error is {err:5.2e}")
@@ -73,7 +69,7 @@ if __name__ == '__main__':
 
     df, err = diff(func,func5,x0)
 
-    true_df = func(1)
+    true_df = 0.01*func(x0)
     exp_err = np.abs(true_df - df)   # derivative of exp(x) = exp(x)
 
     print(f"The expected error is {exp_err:5.2e} and the predicted error is {err:5.2e}")
@@ -86,9 +82,7 @@ if __name__ == '__main__':
 
 
     # relative error is ~ eps_m**(4/5) in BOTH cases, as f^4 * f'(5) / f' = 1 irrespective of the constant c in exp(c * x)
-
     # we expect both to be similar and comparable to eps_m**4/5
-
     # THIS IS INDEED THE CASE
 
     print(rel_err1, rel_err2, 2**(-52*4/5))
