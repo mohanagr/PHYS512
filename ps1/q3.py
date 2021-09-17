@@ -3,18 +3,30 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import splev, splrep, CubicSpline
 
 
-def lakeshore(V, data):
+# I suggested this more general method of estimating error in the Tutorial with Rigel, Sep-16
 
 
-    # I suggested this more general method of estimating error in the Tutorial with Rigel, Sep-16
+def lakeshore(V, data, frac=0.8):
+    '''
+    inputs
+
+    V: array of voltage points where interpolated value is desired
+    data: 2-D array of datafile (first col T, second col V)
+    frac: fraction of original input data to use for resampling, for error estimation. default - 80% data used
+
+    outputs
+
+    2-D array of interpolated Temperature values and error at each value
+    '''
+
 
 
     N_evals = 10 # number of times to resample for ensemble average/stddev etc. later
-    f = 0.6
+    f = frac
     N_actual = np.shape(dat)[0]
     N_rs = int(f * N_actual) # take N_rs points out of total dataset for resampling and error estimation
 
-    rng = np.random.default_rng(seed=42)
+    rng = np.random.default_rng(seed=30)
 
 
     # value estimation
@@ -70,5 +82,7 @@ if __name__ == "__main__":
 
     T_output, T_err = lakeshore(voltage_input, data)
 
-    
-    
+
+
+
+
