@@ -53,6 +53,7 @@ if __name__ == '__main__':
     true_df = func(x0)
     exp_err = np.abs(true_df - df)   # derivative of exp(x) = exp(x)
 
+    print("---- for exp(x) ----")
     print(f"The expected error is {exp_err:5.2e} and the predicted error is {err:5.2e}")
 
     # --output -- #
@@ -72,6 +73,7 @@ if __name__ == '__main__':
     true_df = 0.01*func(x0)
     exp_err = np.abs(true_df - df)   # derivative of exp(x) = exp(x)
 
+    print("---- for exp(0.01x) ----")
     print(f"The expected error is {exp_err:5.2e} and the predicted error is {err:5.2e}")
 
     # --output -- #
@@ -85,7 +87,8 @@ if __name__ == '__main__':
     # we expect both to be similar and comparable to eps_m**4/5
     # THIS IS INDEED THE CASE
 
-    print(rel_err1, rel_err2, 2**(-52*4/5))
+    print("--following quantities should be similar--")
+    print(f"rel_err1 = {rel_err1:5.2e}, rel_err2 = {rel_err2:5.2e}, theoretical rel error = {2**(-52*4/5):5.2e} ")
 
     # 1.1517675969668543e-13 6.801152248406803e-14 3.0002136344885295e-13
 
