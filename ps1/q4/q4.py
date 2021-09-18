@@ -1,5 +1,5 @@
 import numpy as np # linear algebra
-import pandas as pd
+import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 
 
@@ -81,7 +81,7 @@ def analyze_cs(func, low, high, npts):
     ax.grid(True)
     # fig.savefig('./ps1_q3.png')
     MAE = np.mean(np.abs(y_test - y_intrp_cs))
-    print(f"error in polynomial interpolation is {MAE:.2e}:")
+    print(f"error in cubic spline interpolation is {MAE:.2e}:")
 
 
 def rat_fit(x,y,n,m):
@@ -148,7 +148,7 @@ def analyze_ratfunc(func, low, high, npts):
     ax.grid(True)
     # fig.savefig('./ps1_q3.png')
     MAE = np.mean(np.abs(y_test - y_intrp_rat))
-    print(f"error in polynomial interpolation is {MAE:.2e}:")
+    print(f"error in  ratfunc interpolation is {MAE:.2e}:")
 
 
 if __name__ == '__main__':
@@ -163,6 +163,7 @@ if __name__ == '__main__':
 
     low = -np.pi/2
     high = np.pi/2
+    print("---- for cos(x) ----")
     analyze_poly(func, low, high, 11) # accuracy ~ 1.e-4
     analyze_cs(func, low, high, 11) # accuracy ~ 1.e-5
     analyze_ratfunc(func,low, high, 11) # accuracy ~ 1.e-10
@@ -174,6 +175,7 @@ if __name__ == '__main__':
     low = -1
     high = 1
 
+    print("---- for lorentz with pinv ----")
     analyze_poly(func, low, high, 11) # accuracy ~ 1.e-4
     analyze_cs(func, low, high, 11) # accuracy ~ 1.e-5
 
@@ -186,7 +188,7 @@ if __name__ == '__main__':
     # below function call uses pinv
 
     analyze_ratfunc(func,low, high, 11) # accuracy ~ 1.e-16 
-
+    print("***** please see comments inside code ******")
 
 
 

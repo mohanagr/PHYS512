@@ -35,7 +35,7 @@ if __name__=="__main__":
 
     df, err = ndiff(np.exp,0.001, full=True) 
     print(f"The obtained error is: {np.abs(np.exp(0.001)-df):5.2e} and the predicted error is {err:5.2e} ")
-    
+    print("***** please see comments inside code ******")
     #  -- output --
     # The obtained error is: 4.99e-11 and the predicted error is 3.67e-11
 

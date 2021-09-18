@@ -21,9 +21,9 @@ def lakeshore(V, data, frac=0.8):
 
 
 
-    N_evals = 10 # number of times to resample for ensemble average/stddev etc. later
+    N_evals = 100 # number of times to resample for ensemble average/stddev etc. later
     f = frac
-    N_actual = np.shape(dat)[0]
+    N_actual = np.shape(data)[0]
     N_rs = int(f * N_actual) # take N_rs points out of total dataset for resampling and error estimation
 
     rng = np.random.default_rng(seed=30)
@@ -56,7 +56,7 @@ def lakeshore(V, data, frac=0.8):
 
         cs = CubicSpline(x_temp, y_temp)
         
-        y_interp_output = cs(x_interp_input)
+        y_interp_output = cs(V)
         evals.append(y_interp_output)
         
     evals = np.array(evals)
@@ -76,12 +76,26 @@ if __name__ == "__main__":
     data = np.loadtxt("./lakeshore.txt")
 
     # generate 50 random x values to simulate the input -- points we'd like to know the value of function at
-    xmin = dat[:,1].min() 
-    xmax = dat[:,1].max()
+    xmin = data[:,1].min() 
+    xmax = data[:,1].max()
+    rng = np.random.default_rng(seed=30)
     voltage_input =  np.sort(rng.random(50)*(xmax - xmin) + xmin) 
 
     T_output, T_err = lakeshore(voltage_input, data)
 
+    fig, ax = plt.subplots(1,1)
+    fig.set_size_inches(10, 8)
+
+    ax.set_title('given data vs interpolated comparison')
+    ax.plot(data[:,1],data[:,0], 'r--', label='given data')
+    ax.plot(voltage_input, T_output,'go', label='interpolated values at input')
+    leg = ax.legend()
+    ax.set_xlabel('Voltage')
+    ax.set_ylabel('Temperature')
+    ax.grid(True)
+    fig.savefig('./fig_output.png')
+
+    print("***** please see comments inside code and README.TXT ******")
 
 
 
