@@ -180,7 +180,7 @@ if __name__ == '__main__':
     analyze_cs(func, low, high, 11) # accuracy ~ 1.e-5
 
     ### NOTE ###
-    # on using linalg.inv .. the interpolations are grossly wrong, as shown by the graph
+    # on using linalg.inv .. the interpolations are grossly wrong, as shown by the graph in this folder
     # accuracy is totally meaningless
     # 
     # on debugging the eigenvalues of this function (uncomment the print statement in ratfit)...
