@@ -10,9 +10,9 @@ The bootstrap method is based on the fact that these hundreds of resampled data 
 
 We can imagine it more physically as follows. 
 
-For a test point, say 1.2 volts, where we'd like to estimate the value of temperature, we fit our interpolant 100 different times (using 100 different resamples). Since each subset of samples is different, each fit is also slightly different. Thus, we have 100 slightly different estimates of temperature at 1.2 volts. By the principle of bootstrapping, after a large number of such "simulations", we can expect that the variation of temperature values obtained resemble very closely the inherent (unknown) error distribution of the "true" T(V) [T as function of V]
+For a test point, say 1.2 volts, where we'd like to estimate the value of temperature, we fit our interpolant 100 different times (using 100 different resamples). Since each sample set is different, each fit is also slightly different. Thus, we have 100 slightly different estimates of temperature at 1.2 volts. By the principle of bootstrapping, after a large number of such "simulations", we can expect that the variation of obtained temperature values very closely resemble the inherent (unknown) error distribution of the "true" T(V) [T as function of V]
 
-Thus, we can write our error at point x_test[i] as stddev( y_ji ) [j = 1,n_simulations]   stddev of all y values for i_th input
+Thus, we can write our error at point x_test[i] as stddev( y_ji ) [j = 1 to n_simulations]  or more simply stddev of all 100 values for i_th input
 
 Another, very useful inference that can be obtained from this method is that by varying the fraction "f" of original dataset that we use for resampling, we can cross-verify our error estimate.
 
