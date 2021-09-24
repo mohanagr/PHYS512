@@ -1,0 +1,1 @@
+latex test $X^2 = \pi$
