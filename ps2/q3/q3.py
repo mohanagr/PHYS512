@@ -74,20 +74,22 @@ if __name__ == '__main__':
     # first let's create a callable mylog object from our CustomLog class
     # by default we use 10th order Chebyshev over 100 points to estimate log2(x)
     # and by default we create a function for emulating natural log(x)
-    x_test = np.linspace(0.1,10,10)
+    x_test = np.linspace(0.1,0.9,10)
+    x_test = np.append(x_test, np.linspace(1,1000,100))
     y_test = np.log(x_test)
 
 
-    mylog = CustomLog(order=10)
+    mylog = CustomLog(order=50)
     y_pred = mylog(x_test)
-    err = np.sqrt(np.mean((y_test-y_pred)**2))
-    print(f"Error obtained for custom log function by using all orders of Chebyshevs is {err:4.2e}")
+    err_cheb = y_test-y_pred
+    rmserr = np.sqrt(np.mean((err_cheb)**2))
+    print(f"Error obtained for custom log function by using all orders of Chebyshevs is {rmserr:4.2e}")
     
     fig, ax = plt.subplots(1,1)
     fig.set_size_inches(6,4)
     ax.set_title('actual log vs my log -- chebyshev fit')
-    ax.plot(np.linspace(0.1,10,1000),np.log(np.linspace(0.1,10,1000)), 'r-', label='numpy log')
-    ax.plot(x_test, y_pred,'g*', label='values from mylog')
+    ax.plot(x_test,y_test, 'r-', label='numpy log', lw=2)
+    ax.plot(x_test[::3], y_pred[::3],'g*', label='values from mylog')
     leg = ax.legend()
     ax.set_xlabel('x')
     ax.set_ylabel('log(x)')
@@ -105,10 +107,27 @@ if __name__ == '__main__':
 
 
     # now let us repeat this exercise with legendre polynomials instead of Chebyshevs
-    mylog = CustomLog(fit="leg", order=10)
+    mylog = CustomLog(fit="leg", order=50)
     y_pred = mylog(x_test)
-    err = np.sqrt(np.mean((y_test-y_pred)**2))
-    print(f"\n\nError obtained for custom log function by using all orders of Legendre is {err:4.2e}")
+    err_leg = y_test-y_pred
+    rmserr = np.sqrt(np.mean((err_leg)**2))
+
+    print(f"\n\nError obtained for custom log function by using all orders of Legendre is {rmserr:4.2e}")
+    print(f"\nmax errors are: Chebyshev -> {np.max(err_cheb):4.2e}, legendre -> {np.max(err_leg): 4.2e}")
+
+    fig, ax = plt.subplots(1,1)
+    fig.set_size_inches(6,4)
+    ax.set_title('error comparison -- chebyshev vs legendre')
+    ax.plot(x_test, np.abs(err_leg),'r-', label='error from legendre fit')
+    ax.plot(x_test, np.abs(err_cheb),'g-*', label='error from chebyshev fit')
+    leg = ax.legend()
+    ax.set_xlabel('x')
+    ax.set_ylabel('ytrue - ypred')
+    ax.grid(True)
+    ax.set_ylim([0,0.9e-13])
+    ax.text(60,0.61e-13, "legendre through the roof")
+    fig.savefig('./ps2_q3_error_comparison.png')
+
 
     # Even though we've fit some high order, we don't really need to use all of them
     # we can stay below our specified error tolerance by using first few orders
