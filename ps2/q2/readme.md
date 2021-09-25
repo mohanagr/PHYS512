@@ -21,5 +21,10 @@ def memoize(function, *args):
 def myfunc(x):
     return x**2
 
+myfunc = np.vectorize(myfunc)
+
+# now there's no need to use a for loop and call the function on each element
+# nor is there a need to pass an explicit dictionary to function
+
 ```
 The code implements mechanism to count function calls using global variable counters.
