@@ -5,7 +5,7 @@ electric field is a piece-wise continuous function, with discontinuity at z = R.
 E = {
     
     0       ; z <  R
-    1/R^2   ; z >= R
+    1/z^2   ; z >= R
 }
 ```
 
