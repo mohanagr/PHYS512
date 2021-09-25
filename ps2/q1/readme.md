@@ -1,7 +1,7 @@
 There's indeed a singularity encountered in custom integrator at z = R (where R is the radius of the shell). This is expected since 
 electric field is a piece-wise continuous function, with discontinuity at z = R.
 
-_Please see attached `paperwork.jpg` for detailed figure and derivation_
+_Please see attached `paperwork.jpg` for detailed figure, derivation, and exact formula. Below is what the general behaviour of the function looks like_
 
 ```
 E = {
