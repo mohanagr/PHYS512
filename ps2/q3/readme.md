@@ -8,7 +8,7 @@
     
 2.  *How does Legendre fit compare with Chebyshev?*
 
-    In general, the accuracy of our custom log function is very closely comparable for both of them for small order of the polynomial. However, once we start fitting higher orders, Chebyshevs are much more well-behaved than Legendre. Legendre fits are susceptible to high errors randomly. So, even though the RMS error may be small, the maximum error can be several orders of magnitude higher, as shown in the image `error_comparison.png`.
+    In general, the RMS errors are very closely comparable for both of them for small orders of the polynomial. However, once we start fitting higher orders, Chebyshevs are much more well-behaved than Legendre. Legendre fits are susceptible to high errors randomly. So, even though the RMS error may be small, the maximum error can be several orders of magnitude higher, as shown in the image `error_comparison.png`.
 
 
 *Please read code comments too*

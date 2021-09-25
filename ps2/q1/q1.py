@@ -7,13 +7,16 @@ def integrateLegendre(func,npts,a, b, *args, **kwargs):
     # general purpose legendre integrator
 
     # we first get coefficients for a n-1 order legendre function that goes through n points (for a square Vandermonde matrix)
-    # then we estimate the integral as 2*coefficient of P_0
+    # then we estimate the integral as 2*coefficient of P_0, with appropriate scaling to take into account the re-scaled range of x
 
     # x is rescaled to -1, 1
     x = np.linspace(-1, 1, npts)
-    m = (b-a)/2
+
+    # this is a simple linear transformation y = m * x + c to go from [-1,1] -> [a, b]
+    m = (b-a)/2 
     c = (b+a)/2
     Y = func(m*x+c, *args, **kwargs) # equivalenty we could pass an xnew = np.linspace(a, b, npts) and avoid m and c
+    
     P = np.polynomial.legendre.legvander(x,npts-1)
     Pinv = np.linalg.pinv(P)
     coeff = Pinv@Y
