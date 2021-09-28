@@ -1,0 +1,12 @@
+*** Integating exp() from 0 to 1 ***
+Accuracy is 9.10e-09
+Number of times function called 33
+Number of times we didn't need to call it: 42
+Overall 56% reduction in function calls compared to lazy way
+
+*** Integating Lorentzian from -1 to 1 ***
+Accuracy is 3.52e-09
+Number of times function called 113
+Number of times we didn't need to call it: 162
+Overall 59% reduction in function calls compared to lazy way
+

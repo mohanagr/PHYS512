@@ -52,7 +52,7 @@ def d_E(theta, z, R):
 if __name__ == '__main__':
     
     R = 2
-    z = np.linspace(1,3,900)
+    z = np.linspace(-3,3,900)
     z = np.sort(np.append(z,2))
     # y_exp = integrateLegendre(myfunc, 5, 0, np.pi)
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     ax.set_xlabel('z ')
     ax.set_ylabel('E (arbitrary units)')
     ax.grid(True)
-    fig.savefig('./ps2_q1_ElectricField_myIntegration.png')
+    fig.savefig('./ps2_q1_ElectricField_myIntegration1.png')
 
 
     # trying scipy quad
@@ -81,4 +81,4 @@ if __name__ == '__main__':
     ax.set_xlabel('z')
     ax.set_ylabel('E (arbitrary units)')
     ax.grid(True)
-    fig.savefig('./ps2_q1_ElectricField_SciPyQuad.png')
+    fig.savefig('./ps2_q1_ElectricField_SciPyQuad1.png')
