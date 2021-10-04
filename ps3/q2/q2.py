@@ -7,12 +7,12 @@ def derivs(t, n, hlf):
     # A general first-order decay rate-equation is given as:
     # dn/dt  = -k * n
 
-    k = np.log(2)/hl  # rate constants
-    dndt = np.zeros(len(hl)+1)
+    k = np.log(2)/hlf  # rate constants
+    dndt = np.zeros(len(hlf)+1)
     
     #set U-238 manually
     dndt[0] = -k[0]*n[0]
-    for i in range(1,len(hl)):
+    for i in range(1,len(hlf)):
         dndt[i] = -k[i]*n[i] + k[i-1]*n[i-1]
     #set Pb-206 manually
     dndt[-1] = k[-2]*n[-2]
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # print(teval)
     #Analyticaly we expect N_Pb206/N_U238 to be:
     k_U238 = np.log(2)/hl[0]
-    print(k_U238)
+
     Pb_U_theory = (np.exp(k_U238*teval)-1)
 
     fig, ax = plt.subplots(1,2)
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(1,2)
     fig.set_size_inches(18,8)
     ax[0].set_title('Th230/U234 over full range - half-log plot')
-    ax[0].plot(teval, N_out[4,:]/N_out[3,:],'r--', label="Obtained abundance ratio")
+    ax[0].plot(teval, N_out[4,:]/N_out[3,:],'r-', label="Obtained abundance ratio")
     leg = ax[0].legend()
     ax[0].set_xscale('log')
     ax[0].set_xlabel('Time (years)')
@@ -93,7 +93,9 @@ if __name__ == '__main__':
     ax[0].grid(True)
 
     ax[1].set_title('Th230/U234 over interesting range - linear plot')
-    ax[1].plot(teval[0:650], N_out[4,0:650]/N_out[3,0:650],'b--', label="Obtained abundance ratio")
+    ax[1].plot(teval[0:650], N_out[4,0:650]/N_out[3,0:650],'b-', label="Obtained abundance ratio")
+    ax[1].axvline(x=1.5e6,ymin=0,ymax=1,c='black',linestyle='--')
+    ax[1].text( 1.6e6,0.2,"Long-term average reached after\n1.5 mil years.")
     leg = ax[0].legend()
     ax[1].set_xlabel('Time (years)')
     ax[1].set_ylabel('Ratio')
