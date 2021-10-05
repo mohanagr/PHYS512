@@ -9,13 +9,8 @@ def derivs(t, n, hlf):
 
     k = np.log(2)/hlf  # rate constants
     dndt = np.zeros(len(hlf)+1)
-    
-    #set U-238 manually
-    dndt[0] = -k[0]*n[0]
-    for i in range(1,len(hlf)):
-        dndt[i] = -k[i]*n[i] + k[i-1]*n[i-1]
-    #set Pb-206 manually
-    dndt[-1] = k[-2]*n[-2]
+    dndt[:-1] = -k * n[:-1]
+    dndt[1:] = dndt[1:] + k*n[:-1]
 
     return dndt
 
@@ -64,7 +59,8 @@ if __name__ == '__main__':
     fig.set_size_inches(18,8)
 
     ax[0].set_title('Pb206/U238 over full range - half-log plot')
-    ax[0].plot(teval, N_out[-1,:]/N_out[0,:],'r--', label="Obtained abundance ratio")
+    ax[0].plot(teval, Pb_U_theory,'g-', label="Theoretical abundance ratio")
+    ax[0].plot(teval, N_out[-1,:]/N_out[0,:],'r',linestyle=(0, (5, 10)), lw=3,label="Obtained abundance ratio")
     leg = ax[0].legend()
     ax[0].set_xscale('log')
     ax[0].set_xlabel('Time (years)')
@@ -72,8 +68,8 @@ if __name__ == '__main__':
     ax[0].grid(True)
 
     ax[1].set_title('Pb206/U238 theory comparison - linear plot')
-    ax[1].plot(teval, N_out[-1,:]/N_out[0,:],'r--', label="Obtained abundance ratio")
-    ax[1].plot(teval, Pb_U_theory,'b-', label="Theoretical abundance ratio")
+    ax[1].plot(teval, Pb_U_theory,'g-', label="Theoretical abundance ratio")
+    ax[1].plot(teval, N_out[-1,:]/N_out[0,:],'r', linestyle=(0, (5, 10)), lw=3,label="Obtained abundance ratio")
     leg = ax[1].legend()
     # ax[1].set_xscale('log')
     # ax[1].set_yscale('log')
