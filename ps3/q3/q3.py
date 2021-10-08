@@ -73,11 +73,13 @@ if __name__ == '__main__':
 
     rmserr = np.sqrt(np.sum(resd**2)/(y.shape[0]-m.shape[0]+1))
     chisq = resd.T@resd # Noise is identity right now
+    mcov = lsq.get_param_cov()
+    merr = np.sqrt(np.diag(mcov))
     a = m[0]
     x0 = -0.5*m[1]/a
     y0 = -0.5*m[2]/a
     z0 = m[3]-x0**2-y0**2
-    print(f"params of the paraboloid are:\na\t= {a:4.2e}\nx0\t= {x0:4.2f}\ny0\t= {y0:4.2f}\nz0\t= {z0:4.2f}")
+    print(f"params of the paraboloid are:\na\t= {a:4.2e} +/- {merr[0]:4.2e}\nx0\t= {x0:4.2f}\ny0\t= {y0:4.2f}\nz0\t= {z0:4.2f}")
     print(f"Chisq of fit is: {chisq:4.2f}")
     print(f"RMS studentized err is: {rmserr:4.2f} mm")
 
@@ -124,20 +126,54 @@ if __name__ == '__main__':
 
     ypred = A@m
     resd = y-ypred
-    rmserr = np.sqrt(np.mean(resd**2))
+    rmserr = np.sqrt(np.sum(resd**2)/(y.shape[0]-m.shape[0]+1))
     chisq = resd.T@np.linalg.inv(Nnew)@resd
-    print(f"params of the paraboloid are:\na\t= {a:4.2e}\nx0\t= {x0:4.2f}\ny0\t= {y0:4.2f}\nz0\t= {z0:4.2f}")
+    mcov = lsq.get_param_cov()
+    merr = np.sqrt(np.diag(mcov))
+    print(f"params of the paraboloid are:\na\t= {a:4.2e} +/- {merr[0]:4.2e}\nx0\t= {x0:4.2f}\ny0\t= {y0:4.2f}\nz0\t= {z0:4.2f}")
     print(f"Chisq of fit is: {chisq:4.2f}")
     print(f"RMS studentized err is: {rmserr:4.2f} mm")
 
-    mcov = lsq.get_param_cov()
-    merr = np.sqrt(np.diag(mcov))
+    
 
     err_a = merr[0]
 
     err_focus = np.abs(0.25*err_a/a**2)
 
     print(f"Error in focus is {err_focus:4.2f} mm")
+
+    print("\n*** Bonus part 1 - non-circularity ***")
+
+    A = np.zeros((data.shape[0],5))
+    A[:,0] = data[:,0]**2 # x^2
+    A[:,1] = data[:,1]**2 # y^2
+    A[:,2] = data[:,0] # x
+    A[:,3] = data[:,1] # y
+    A[:,4] = 1 # constant
+    y = data[:,2] # z values
+
+    lsq = leastsq(A,y,Nnew)
+    lsq.fit()
+    m = lsq.params
+    a = m[0]
+    b = m[1]
+    x0 = -0.5*m[2]/a
+    y0 = -0.5*m[3]/a
+    z0 = m[4]-x0**2-y0**2
+    mcov = lsq.get_param_cov()
+    merr = np.sqrt(np.diag(mcov))
+    ypred = A@m
+    resd = y-ypred
+    rmserr = np.sqrt(np.sum(resd**2)/(y.shape[0]-m.shape[0]+1))
+    chisq = resd.T@np.linalg.inv(Nnew)@resd
+    print(f"params of the paraboloid are:\na\t= {a:4.2e} +/- {merr[0]:4.2e}\nb\t= {b:4.2e} +/- {merr[1]:4.2e}\nx0\t= {x0:4.2f}\ny0\t= {y0:4.2f}\nz0\t= {z0:4.2f}")
+    print(f"Chisq of fit is: {chisq:4.2f}")
+    print(f"RMS studentized err is: {rmserr:4.2f} mm")
+
+    print(f"a very close to b. fractional difference is:{np.abs(a-b)*100/a:4.2f}%" )
+
+
+
 
 
 

@@ -1,0 +1,31 @@
+*** Identity Noise matrix ***
+
+params of the paraboloid are:
+a	= 1.67e-04 +/- 1.71e-08
+x0	= -1.36
+y0	= 58.22
+z0	= -4903.90
+Chisq of fit is: 6745.18
+RMS studentized err is: 3.78 mm
+
+*** Repeating with a better Noise model (refer readme) ***
+
+params of the paraboloid are:
+a	= 1.67e-04 +/- 5.70e-08
+x0	= 0.31
+y0	= 57.13
+z0	= -4776.27
+Chisq of fit is: 441.27
+RMS studentized err is: 3.91 mm
+Error in focus is 0.51 mm
+
+*** Bonus part 1 - non-circularity ***
+params of the paraboloid are:
+a	= 1.66e-04 +/- 7.98e-08
+b	= 1.67e-04 +/- 7.62e-08
+x0	= 0.33
+y0	= 57.27
+z0	= -4792.06
+Chisq of fit is: 410.71
+RMS studentized err is: 3.74 mm
+a very close to b. fractional difference is:0.35%
