@@ -45,7 +45,7 @@ def rk4_stepd(func, x, y, h):
     # can be used to make step size adaptive              #
     #-----------------------------------------------------#
     
-    # as shown in Github readme, we can sneak one more order of accuracy by being cunning
+    # as shown in attached pdf, we can sneak one more order of accuracy by being cunning
     yfin = (16*ynew2-ynew1)/15
     
     return yfin
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     rmserr1 = np.sqrt(np.mean((y_true1-y_est1)**2))
     maxerr1 = np.max(np.abs(y_true1-y_est1))
     print(f"Number of steps: {200}\nNumber of function evaluations: {200*4}")
-    print(f"step size is {stepsize:4.2f}, so Max predicted error (at the end of integration) from RK4 is of the order {stepsize**4/120:4.2e}")
+    print(f"step size is {stepsize:4.2f}")
     print(f"The RMS error in estimation using RK4 of stepsize h is :{rmserr1:4.2e}\nand the max error is: {maxerr1:4.2e}\n")
 
     #repeat the same thing with RK4-double but with only 73 steps, so that number of function evaluations are the same
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     rmserr2 = np.sqrt(np.mean((y_true2-y_est2)**2))
     maxerr2 = np.max(np.abs(y_true2-y_est2))
     print(f"Number of steps: {nsteps}\nNumber of function evaluations: {nsteps*11}")
-    print(f"step size is {stepsize:4.2f}, so Max predicted error (at the end of integration) from RK4 double-stepper is of the order {2*(stepsize/2)**5/720:4.2e} ")
+    print(f"step size is {stepsize:4.2f}")
     print(f"The RMS error in estimation using RK4 of stepsize h is :{rmserr2:4.2e}\nand the max error is: {maxerr2:4.2e}\n")
 
 

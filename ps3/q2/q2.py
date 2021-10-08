@@ -35,7 +35,6 @@ if __name__ == '__main__':
     #Pb-206 stable
     ])
 
-    # hl = hl/1.e9
 
     n0 = np.zeros(len(hl)+1)
     n0[0] = 10000 #10k U-238 atoms, can be an arbitrary number
@@ -49,10 +48,9 @@ if __name__ == '__main__':
 
     # Use an implicit method like Radau as this is a stiff system of equations.
     N_out = solve_ivp(derivs,[tstart,tend],n0,method='Radau',t_eval=teval,args=(hl,)).y
-    # print(teval)
+
     #Analyticaly we expect N_Pb206/N_U238 to be:
     k_U238 = np.log(2)/hl[0]
-
     Pb_U_theory = (np.exp(k_U238*teval)-1)
 
     fig, ax = plt.subplots(1,2)
@@ -71,8 +69,6 @@ if __name__ == '__main__':
     ax[1].plot(teval, Pb_U_theory,'g-', label="Theoretical abundance ratio")
     ax[1].plot(teval, N_out[-1,:]/N_out[0,:],'r', linestyle=(0, (5, 10)), lw=3,label="Obtained abundance ratio")
     leg = ax[1].legend()
-    # ax[1].set_xscale('log')
-    # ax[1].set_yscale('log')
     ax[1].set_xlabel('Time (years)')
     ax[1].set_ylabel('Ratio')
     ax[1].grid(True)
