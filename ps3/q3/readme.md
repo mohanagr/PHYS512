@@ -4,7 +4,7 @@ If there are two models with differening chisquare values, we prefer the one wit
 
 `P(d|m1) > P(d|m2)` if `chisq(m1) < chisq(m2)`
 
-When starting with the default model of Identity Noise matrix, (which translates to assuming that the error in our estimates are distributed as standard normal `N(0,1)`), we obtain a chisquare of 6745. In search for a new noise model, we first plot the residuals with the values of the dependent variable (called `y` in the code and `d` in Jon's notes). This is to visualize if the variation of error in our predictions -- small for some points, larger for others.
+When starting with the default model of Identity Noise matrix, (which translates to assuming that the error in our estimates are distributed as standard normal `N(0,1)`), we obtain a chisquare of 6745. In search for a new noise model, we first plot the residuals with the values of the dependent variable (called `y` in the code and `d` in Jon's notes). This is to visualize if there is variation in the magnitude of error in our predictions -- small for some points, larger for others.
 
 It is apparent from `residual_variation.png` that there is a _heteroskedastic_ trend in our residuals, i.e. the variation of residuals is: 
     1. Not constant

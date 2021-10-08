@@ -1,0 +1,12 @@
+Number of steps: 200
+Number of function evaluations: 800
+step size is 0.20
+The RMS error in estimation using RK4 of stepsize h is :1.64e-04
+and the max error is: 2.58e-04
+
+Number of steps: 73
+Number of function evaluations: 803
+step size is 0.55
+The RMS error in estimation using RK4 of stepsize h is :2.43e-05
+and the max error is: 3.81e-05
+
