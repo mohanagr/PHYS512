@@ -14,8 +14,9 @@ The simplest update to our noise matrix would be to replace `N(i,i) = [residual(
 
 A way to achieve such a model is to bin the data and assign the average error in each bin as the error for those points in the nosie matrix. There are two ways to estimate the said "error". We could either:
 
-    - Calculate the variance of residuals in the bin.
-    - Take the mean of the square of the residuals.
+- Calculate the variance of residuals in the bin.
+
+- Take the mean of the square of the residuals.
 
 In practice, both of the above ways yield similar answers because `Var(e) = <e^2> - <e>^2`, and the second term on RHS (the mean of residuals) in zero or close to zero in most cases (including ours).
 
@@ -29,13 +30,13 @@ With the new noise matrix, our chisquare reduces to 441 -- improvement of a fact
 
 There are two parts to the bonus question.
 
-    1. Introducing non-circularity in the paraboloid.
+1. Introducing non-circularity in the paraboloid.
 
-        - In this case, the coefficients of `(x-x0)^2` and `(y-y0)^2` will be different, unlike in the previous case. If we look down on the paraboloid (facing the bottom), we'll see an ellipse rather than a circle.
+    In this case, the coefficients of `(x-x0)^2` and `(y-y0)^2` will be different, unlike in the previous case. If we look down on the paraboloid (facing the bottom), we'll see an ellipse rather than a circle.
 
-    2. Introducing asymmetric axes.
+2. Introducing asymmetric axes.
 
-        - In this case, the paraboloid's principal axes are rotated with respect to ground. A simple coordinate transformation using 2-D rotation matrix will yield the correct coordinates.
+    In this case, the paraboloid's principal axes are rotated with respect to ground. A simple coordinate transformation using 2-D rotation matrix will yield the correct coordinates.
 
 First of the above two cases has been implemented in the code. Second part, though straightforward, has been skipped because of time-constraints.
 
