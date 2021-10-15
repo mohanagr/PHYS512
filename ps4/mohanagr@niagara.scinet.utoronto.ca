@@ -1,0 +1,78 @@
+#! /usr/bin/python3.6
+
+import multiprocessing as mp
+import time
+import numpy as np
+import camb
+
+
+def func(a):
+    time.sleep(3)
+    print(f"\n{a**2}\n")
+    return a**2
+
+
+def get_spectrum(pars,lmax=3000):
+    #print('pars are ',pars)
+    H0=pars[0]
+    ombh2=pars[1]
+    omch2=pars[2]
+    tau=pars[3]
+    As=pars[4]
+    ns=pars[5]
+    pars=camb.CAMBparams()
+    pars.set_cosmology(H0=H0,ombh2=ombh2,omch2=omch2,mnu=0.06,omk=0,tau=tau)
+    pars.InitPower.set_params(As=As,ns=ns,r=0)
+    pars.set_for_lmax(lmax,lens_potential_accuracy=0)
+    results=camb.get_results(pars)
+    powers=results.get_cmb_power_spectra(pars,CMB_unit='muK')
+    cmb=powers['total']
+    tt=cmb[2:,0]   # monopole and dipole removed
+    return tt
+
+
+def get_deriv(parshigh, parslow, delta):
+    d = 0.5*(get_spectrum(parshigh)-get_spectrum(parslow))/delta
+    return d
+
+
+def deriv_TT(pars):
+    derivs = np.zeros((3049,6))
+    delp = [0.05, 0.001, 0.001, 0.0001, 1e-10, 0.01]
+    pmat = np.tile(pars,len(pars)).reshape(len(pars),len(pars))
+    pmat1 = pmat + delp*np.eye(len(pars))
+    pmat2 = pmat - delp*np.eye(len(pars))
+    # results = []
+    # pool = mp.Pool(8)
+    # for i in range(len(pars)):
+    #     r = pool.apply_async(get_deriv, args = (pmat1[i,:], pmat2[i,:], delp[i]))
+    #     results.append(r)
+    # pool.close()
+    # pool.join()
+    # for i, result in enumerate(results):
+    #     derivs[:,i] = result.get()
+    for i in range(len(pars)):
+        derivs[:,i] = 0.5*(get_spectrum(pmat1[i,:])-get_spectrum(pmat2[i,:]))/delp[i]
+    
+    return derivs
+    
+
+if __name__ == "__main__":
+    # print("in name")
+    # pool = mp.Pool(4)
+    # ts = time.time()
+    # results = [pool.apply_async(func, args=(i,)) for i in range(0,10)]
+
+    # pool.close()
+    # pool.join()
+    # te = time.time()
+    # print(te-ts)
+
+    # for result in results:
+    #     print(result.get())
+    pars = [60,0.02,0.1,0.05,2.00e-9,1.0]
+    ti = time.time()
+    der = deriv_TT(pars)
+    te = time.time()
+    print(f"time taken {te-ti:4.2f}")
+    print(der.shape)
