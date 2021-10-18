@@ -20,9 +20,9 @@ Even though the code prints these parameters, the output has not been recorded s
 
 ## Quality of Results
 
-The parameter constrains and 1-sigma errors are in surprisingly good agreement with Planck 2018 results. This is especially the case after including the Tau prior, but even with a uniform prior, the values for _H0_, _Ohmbh2_, _Ohmch2_ match the Planck results to 2 to 4 significant digits.
+The parameter constrains and 1-sigma errors are in surprisingly good agreement with Planck 2018 results _(Planck Collaboration 2018 results Part VI Cosmological Parameters)_. This is especially the case after including the Tau prior, but even with uniform priors (Q3 run), the values for _H0_, _Ohmbh2_, _Ohmch2_ match the Planck results to 2 to 4 significant digits.
 
-The constraint on Tau obtained from importance sampling and the one obtained from running a new chain with prior match to 2 siginificant digits (a difference of 0.001).
+The constraint on Tau obtained from importance sampling and the one obtained from running a new chain with prior match to 2 siginificant digits (a difference of merely 0.001).
 
-Parameter distributions have been visualized using `Seaborn` library (specifically the `pairplot` feature) instead of corner plots, since I feel the plots with `Seaborn` are more visually appealing.
+Parameter distributions have been visualized using `Seaborn` library (specifically the `pairplot` feature) instead of `Corner` plots, since I feel the plots with Seaborn are more visually appealing. I'm particularly satisfied with the plots obtained using final chain with 10K points for Q4.
 
