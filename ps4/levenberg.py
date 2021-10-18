@@ -108,7 +108,7 @@ def fit_lm(fun,m,lmax,y,N=None,niter=27,atol=1.e-2,rtol=1.e-12):
                 print("CHAIN STUCK. TERMINATING")
                 break
 
-            print("step rejected. new m is", m)
+            print("step rejected. old m is", m)
 
     param_cov = np.linalg.inv(derivs.T@Ninv@derivs)
     np.savetxt(f'./param_cov_{datetime.now().strftime("%b%d_%H%M")}.txt', param_cov)
@@ -120,15 +120,10 @@ if __name__ == "__main__":
     y = dat[:,1]
     pars=np.asarray([65,0.02,0.1,0.07,2.00e-9,0.97]) # run 2 init params
 
-#   results
+ #  results
  #  [6.00080844e+01 2.12095628e-02 1.37395306e-01 1.00003801e-02, 1.99728939e-09 9.35198641e-01] run 1  -> ditching this. some weird, unphysical param space
  #  [6.81078776e+01 2.23451218e-02 1.17957964e-01 8.38390097e-02 2.21377445e-09 9.72410700e-01] run 2   -> this seems acceptable enough. Can use cov matrix
 
-    # model=get_spectrum(pars)
-    # err_y = 0.5*(dat[:,2] + dat[:,3])
-    # N = np.eye(len(y))*err_y**2
-    # r = y-model[:len(y)]
-    # print(r.T@np.linalg.inv(N)@r)
     err_y = 0.5*(dat[:,2] + dat[:,3])
     N = np.eye(len(y))*err_y**2
     # print(model,y,N )
