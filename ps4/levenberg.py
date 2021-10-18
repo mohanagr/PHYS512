@@ -136,5 +136,6 @@ if __name__ == "__main__":
     print(np.max(ells), ells.shape)
 
     newpars = fit_lm(deriv_TT, pars,len(y), y, N=N)
+    print('best fit pars obtained are:\n', newpars)
 
 
