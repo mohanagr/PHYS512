@@ -1,17 +1,28 @@
 ## File structure
 
 The code to run an MCMC chain is present in `mcmc.py`.
-The code to run Levenberg-Marquardt minimization is present in 'levenberg.py'
-The analysis and visualization results of MCMC chains (for questions 3 and 4) is present in 'MCMC_analysis.ipynb'. 
-(It can be viewed as in on Github, but some LateX equations may not be displayed correctly depending on your browser. Running it locally is recommended.)
+
+The code to run Levenberg-Marquardt minimization is present in `levenberg.py`
+
+The analysis and visualization results of MCMC chains (for questions 3 and 4) is present in `MCMC_analysis.ipynb`. A detailed note on Importance sampling is provided in it.
+
+(It can be viewed as on Github, but some LateX equations may not be displayed correctly depending on your browser. Running it locally is recommended.)
 
 ## Output structure
 
-Two L-M chains were run with, and the parameter covariances obtained from those are present in files `param_cov_Oct*.txt`. The latest of these outputs (Oct13_1322) was used to initiate the MCMC chain for Q3.
+Two L-M chains were run and the parameter covariances obtained from those are present in files `param_cov_Oct*.txt`. The latest of these outputs (`Oct13_1322.txt`) was used to initiate the MCMC chain for Q3.
 
 The best-fit parameters obtained in this L-M run were: 
 
-`[6.81078776e+01 2.23451218e-02 1.17957964e-01 8.38390097e-02 2.21377445e-09 9.72410700e-01]`
+`[6.81078776e+01 2.23451218e-02 1.17957964e-01 8.38390097e-02 2.21377445e-09 9.72410700e-01]`. These are respectively: _H0_, _Ohmbh2_, _Ohmch2_, _Tau_, _As_, and _ns_.
 
-Even though the code prints these parameters, the output has not been recorded separately since it is the covariance matrix we are most interested in. We know that L-M best-fit parameters will not be accurate in 20-30 steps.
+Even though the code prints these parameters, the output has not been recorded separately since it is the covariance matrix that we are most interested in. We know that L-M best-fit parameters will not be accurate in 20-30 steps.
+
+## Quality of Results
+
+The parameter constrains and 1-sigma errors are in surprisingly good agreement with Planck 2018 results. This is especially the case after including the Tau prior, but even with a uniform prior, the values for _H0_, _Ohmbh2_, _Ohmch2_ match the Planck results to 2 to 4 significant digits.
+
+The constraint on Tau obtained from importance sampling and the one obtained from running a new chain with prior match to 2 siginificant digits (a difference of 0.001).
+
+Parameter distributions have been visualized using `Seaborn` library (specifically the `pairplot` feature) instead of corner plots, since I feel the plots with `Seaborn` are more visually appealing.
 
