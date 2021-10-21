@@ -1,0 +1,5 @@
+For Garbage params:
+chisq is 15267.94 for 2501 degrees of freedom.
+
+For Better params:
+chisq is 3272.20 for 2501 degrees of freedom.
