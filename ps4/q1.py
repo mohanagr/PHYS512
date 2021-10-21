@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import camb
+from scipy import stats
 
 def get_spectrum(pars,lmax=3000):
     #print('pars are ',pars)
@@ -27,14 +28,27 @@ if __name__ == '__main__':
     ell=planck[:,0]
     y=planck[:,1]
     y_errs=0.5*(planck[:,2]+planck[:,3])
-
+    
+    print("H0 (null hypo):\tThe chisquare (summation of small errors) could've come from random fluctuations = Good model")
+    print("H1 (alt  hypo):\tThe chisquare could not have come from random fluctuations = something bad in the model")
+    print("\nLet us set confidence level at 99.9% i.e. alpha = 0.001. \nIf the chisquare is so large that the probability of it occuring randomly is <0.001, we can reject our Null Hypothesis.")
+    
     pars=np.asarray([60,0.02,0.1,0.05,2.00e-9,1.0])
     y_pred=get_spectrum(pars)
     y_pred=y_pred[:len(y)]
     resid=y-y_pred
     chisq=np.sum( (resid/y_errs)**2)
-    print("For Garbage params:")
-    print(f"chisq is {chisq:6.2f} for {len(resid)-len(pars)} degrees of freedom.")
+    df = len(resid)-len(pars)
+
+    print(f"\n The relevant critical value of chisquare is {stats.chi2.isf(0.001, df):6.2f}")
+    print("So if our chisquare exceeds this value, we are 99% sure that our model is lacking in something and it's not a good fit.")
+
+    
+    
+    print("\nFor Garbage params:")
+    print(f"chisq is {chisq:6.2f} for {df} degrees of freedom.")
+    print(f"DEFINITELY BAD")
+
 
     pars=np.asarray([69, 0.022, 0.12, 0.06, 2.1e-9, 0.95])
     y_pred=get_spectrum(pars)
@@ -42,6 +56,7 @@ if __name__ == '__main__':
     resid=y-y_pred
     chisq=np.sum( (resid/y_errs)**2)
     print("\nFor Better params:")
-    print(f"chisq is {chisq:6.2f} for {len(resid)-len(pars)} degrees of freedom.")
+    print(f"chisq is {chisq:6.2f} for {df} degrees of freedom.")
+    print(f"It's still bad. needs improvement. ")
     
 

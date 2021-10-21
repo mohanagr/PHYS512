@@ -1,5 +1,16 @@
+H0 (null hypo):	The chisquare (summation of small errors) could've come from random fluctuations = Good model
+H1 (alt  hypo):	The chisquare could not have come from random fluctuations = something bad in the model
+
+Let us set confidence level at 99.9% i.e. alpha = 0.001. 
+If the chisquare is so large that the probability of it occuring randomly is <0.001, we can reject our Null Hypothesis.
+
+The relevant critical value of chisquare is 2725.27
+So if our chisquare exceeds this value, we are 99% sure that our model is lacking in something and it's not a good fit.
+
 For Garbage params:
 chisq is 15267.94 for 2501 degrees of freedom.
+DEFINITELY BAD
 
 For Better params:
 chisq is 3272.20 for 2501 degrees of freedom.
+It's still bad. needs improvement. 
