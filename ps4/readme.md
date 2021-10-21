@@ -22,9 +22,9 @@ The parameter covariance matrix estimated using Importance Sampling of the Q3 ch
 
 ## Quality of Results
 
-For Question 1, it's shown I use the chi-squared goodness-of-fit test for Maximum Likelihood Estimates (as described in Numerical Recipes). The critical value of chi-square at 99.9% confidence level is 2725. It is shown in `output_q1.txt` that the chisquare obtained using parameters suggested in Q1 give us a much higher chi-square. Therefore, the chi-square has certainly not come from random fluctuations (as we expect it to, since it's just a sum of randomly distributed errors), and improvements in model are needed.
+For Question 1, I use the chi-squared goodness-of-fit test for Maximum Likelihood Estimates (as described in Numerical Recipes). The critical value of chi-square at 99.9% confidence level is 2725. It is shown in `output_q1.txt` that the chisquare obtained using parameters suggested in Q1 give us a much higher chi-square. Therefore, the chi-square has certainly not come from random fluctuations (as we expect it to, since it's just a sum of randomly distributed errors), and improvements in model are needed.
 
-Here it must be mentioned that even if obtained hi-square is less than the variance of chi-square distribution with 2501 degress of freedom (~roughly 5000), it does not mean that the fit is good. Chi-square distribution with high degrees of freedom is heavily peaked, and does not follow the Gaussian rule of 1-sigma ~ 68%. A goodness-of-fit test such as above is necessary.
+Here it must be mentioned that even if the obtained chi-square is less than the variance of chi-square distribution with 2501 degress of freedom (~roughly 5000), it does not mean that the fit is good. Chi-square distribution with high degrees of freedom is heavily peaked, and does not follow the Gaussian rule of 1-sigma ~ 68%. A goodness-of-fit test such as above is necessary.
 
 For all other questions, the chisquare is sufficiently below 2725.
 

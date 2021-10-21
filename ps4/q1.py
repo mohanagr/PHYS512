@@ -41,7 +41,7 @@ if __name__ == '__main__':
     df = len(resid)-len(pars)
 
     print(f"\n The relevant critical value of chisquare is {stats.chi2.isf(0.001, df):6.2f}")
-    print("So if our chisquare exceeds this value, we are 99% sure that our model is lacking in something and it's not a good fit.")
+    print("So if our chisquare exceeds this value, we are 99.9% sure that our model is lacking in something and it's not a good fit.")
 
     
     

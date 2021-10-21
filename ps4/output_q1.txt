@@ -5,7 +5,7 @@ Let us set confidence level at 99.9% i.e. alpha = 0.001.
 If the chisquare is so large that the probability of it occuring randomly is <0.001, we can reject our Null Hypothesis.
 
 The relevant critical value of chisquare is 2725.27
-So if our chisquare exceeds this value, we are 99% sure that our model is lacking in something and it's not a good fit.
+So if our chisquare exceeds this value, we are 99.9% sure that our model is lacking in something and it's not a good fit.
 
 For Garbage params:
 chisq is 15267.94 for 2501 degrees of freedom.
