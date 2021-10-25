@@ -1,5 +1,7 @@
 ## File structure
 
+The code for question one is present in `q1.py`.
+
 The code to run an MCMC chain is present in `mcmc.py`.
 
 The code to run Levenberg-Marquardt minimization is present in `levenberg.py`
@@ -10,11 +12,13 @@ The analysis and visualization results of MCMC chains (for questions 3 and 4) is
 
 ## Output structure
 
+Output for Q1 is present in `output_q1.txt`
+
 Two L-M chains were run and the parameter covariances obtained from those are present in files `param_cov_Oct*.txt`. The latest of these outputs (`Oct13_1322.txt`) was used to initiate the MCMC chain for Q3.
 
 The best-fit parameters obtained in this L-M run were: 
 
-`[6.81078776e+01 2.23451218e-02 1.17957964e-01 8.38390097e-02 2.21377445e-09 9.72410700e-01]`. These are respectively: _H0_, _Ohmbh2_, _Ohmch2_, _Tau_, _As_, and _ns_.
+`[0.68 0.0223 0.117 0.084 2.2e-09 0.972]`. These are respectively: _H0_, _Ohmbh2_, _Ohmch2_, _Tau_, _As_, and _ns_.
 
 Even though the code prints these parameters, the output has not been recorded separately since it is the covariance matrix that we are most interested in. We know that L-M best-fit parameters will not be accurate in 20-30 steps.
 
