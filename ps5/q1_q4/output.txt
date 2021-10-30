@@ -1,0 +1,25 @@
+array is:	 [1, 2, 3, 4]
+kernel is:	 [0, 1, 0, 0]
+DFT conv is:	 [4. 1. 2. 3.]
+circular manual conv:	 [4. 1. 2. 3.]
+linear conv is:	 [0. 1. 2. 3. 4. 0. 0.]
+We expected N+M-1 = 7 elements in our full linear convolution.
+
+This method allows shapes of kernel and array to be different.
+E.g. Let's keep kernel [0,1] to shift elements by 1
+
+array is:	 [1, 2, 3, 4]
+kernel is:	 [0, 1]
+linear conv is:	 [0. 1. 2. 3. 4.]
+
+Example: let's calculate 1-D Gravitational potential
+
+array is:	 [1, 1, 1, 1]
+This is array of unit charges
+kernel is:	 [100000, 1, 0.5, 0.33, 0.25, 0.125, 0.0625, 0]
+this is a kernel of 1/r
+linear conv is:
+ [1.0000000e+05 1.0000100e+05 1.0000150e+05 1.0000183e+05 2.0800000e+00
+ 1.2050000e+00 7.6750000e-01 4.3750000e-01 1.8750000e-01 6.2500000e-02
+ 0.0000000e+00]
+this is how potential varies on our 1-D grid because of 4 charges.
