@@ -33,6 +33,13 @@ if __name__ == '__main__':
 
 	window = 0.5 - 0.5*np.cos(2*np.pi*n/N)
 	wy = y*window
+	plt.title('original vs windowed input')
+	plt.plot(y, 'r', label='original')
+	plt.plot(wy, 'b', label='windowed')
+	plt.legend()
+	plt.grid(True)
+	plt.savefig('./original_windowed_comparison.png')
+	plt.clf()
 	wfft = np.fft.rfft(wy)
 	# plt.plot(n,wy)
 	plt.title('Reducing the leakage')
@@ -40,7 +47,7 @@ if __name__ == '__main__':
 	plt.plot(np.abs(truefft)[:N//2],'.', label='not windowed')
 	plt.text(5,10, "Windowed function has power in just 3 modes,\ncompared to almost 20 modes for non-windowed.")
 	plt.legend()
-	plt.savefig('./redcuing_leakage.png')
+	plt.savefig('./reducing_leakage.png')
 	plt.show()
 
 
