@@ -2,6 +2,7 @@ import numpy as np
 import numba as nb
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import sys
 #select all occurence shift ctrl alt j
 # repeat line ctrl d
 
@@ -25,18 +26,20 @@ def get_grad(x,pot,RES):
         grad[i, 1] = 0.5 * (pot[(irow - 1), icol] - pot[(irow + 1) % nside, icol]) / RES
         # y decreases with high row num.
         grad[i, 0] = 0.5 * (pot[irow, (icol + 1) % nside] - pot[irow, icol - 1]) / RES
-        PE += pot[irow, icol]
         # print(self.grad)
-    return -grad, PE
+    return -grad
 
 @nb.njit
 def hist2d(x, mat, RES):
+    # this is better than numpy.hist because of parallelization
     nside = mat.shape[0]
+    # temp = np.zeros((nside, nside))
     for i in range(x.shape[0]):
         irow = int(nside // 2 - x[i, 1] // RES - 1)  # row num is given by y position up down
         # but y made to vary 16 to -16 down. [0] is 16
         icol = int(nside // 2 + x[i, 0] // RES)
         mat[irow,icol]+=1
+
 
 class nbody():
 
@@ -44,6 +47,8 @@ class nbody():
         self.nside=nside
         self.x=np.zeros([npart,2])
         self.f=np.zeros([npart,2])
+        self.cur_f = np.zeros([npart, 2]) # these are for leapfrog v2
+        self.new_f = np.zeros([npart, 2]) # ------ DITTO -----------
         self.v=np.zeros([npart,2])
         self.grad=np.zeros([npart,2])
         self.m=np.ones(npart)
@@ -75,10 +80,10 @@ class nbody():
 
     def ic_1part(self):
         # place one particle at (0,0) with zero velocity
-        self.x[0,0] = -4
-        self.x[0,1] = -4
-        self.v[0,0] = 0
-        self.v[0,1] = 0
+        self.x[0,0] = 0
+        self.x[0,1] = 0
+        self.v[0,0] = 0.2
+        self.v[0,1] = 0.05
 
     def ic_2part_circular(self):
         self.x[0, 0] = 0
@@ -90,19 +95,19 @@ class nbody():
         self.v[0, 0] = np.sqrt(1/8)
         self.v[1, 0] = -np.sqrt(1/8)
 
-        self.v[0, 1] = 0.2
-        self.v[1, 1] = 0.2
+        # self.v[0, 1] = 0.2
+        # self.v[1, 1] = 0.2
 
 
     def ic_gauss(self):
         self.x[:] = np.random.randn(self.npart, 2) * self.XMAX / 4  # so that 95% within XMIN - XMAX
 
-    def ics_2gauss(self):
-        self.x[:]=np.random.randn(self.npart,2)* self.XMAX / 4
-        self.x[:self.npart//2,1]=self.x[:self.npart//2,1]-50
-        self.x[self.npart//2:,1]=self.x[self.npart//2:,1]+50
-        self.v[:self.npart//2,0]=3 # 3 for 5k
-        self.v[self.npart//2:,0]=-3
+    def ics_2gauss(self, vel):
+        self.x[:]=np.random.randn(self.npart,2)*self.XMAX/4
+        self.x[:self.npart//2,1]=self.x[:self.npart//2,1]-self.XMAX/2.4
+        self.x[self.npart//2:,1]=self.x[self.npart//2:,1]+self.XMAX/2.4
+        self.v[:self.npart//2,0]= vel # 3 for 5k
+        self.v[self.npart//2:,0]=-vel
 
     def ic_3part(self):
         self.x[0,:] = [0,2]
@@ -116,7 +121,6 @@ class nbody():
         x[x > self.XMAX] = x[x > self.XMAX] - (self.XMAX - self.XMIN)
 
     def set_grad(self):
-        PE = 0
         for i in range(self.npart):
             # print("Particle positions:", self.x[i])
             irow = int(self.nside // 2 - self.x[i, 1] // self.RES -1) # row num is given by y position up down
@@ -129,9 +133,8 @@ class nbody():
             self.grad[i, 1] = 0.5 * (self.pot[(irow - 1), icol] - self.pot[(irow+1)%self.nside, icol]) / self.RES
             # y decreases with high row num.
             self.grad[i, 0] = 0.5 * (self.pot[irow, (icol + 1) % self.nside] - self.pot[irow, icol - 1]) / self.RES
-            PE += self.pot[irow,icol]
-            # print(self.grad)
-        return PE
+
+
 
     def update_rho(self, x):
         bins = self.RES*(np.arange(self.nside+1)-self.nside//2) #can equivalentlly use fftshift
@@ -150,21 +153,50 @@ class nbody():
         self.pot = np.fft.irfft2(self.rhoft * self.kernelft, [self.nside, self.nside])
 
     def update_forces(self):
-        self.f[:], PE = get_grad(self.x, self.pot, self.RES)
-        return PE
+        self.f[:] = get_grad(self.x, self.pot, self.RES)
+        # return get_grad(self.x, self.pot, self.RES)
 
     def run_leapfrog(self, dt=1, verbose=False):
-
+        KE = 0.5 * np.sum(self.v ** 2)
+        PE1 = 0.5 * np.sum(obj.rho * obj.pot)
         self.x[:] = self.x[:] + dt * self.v
         self.update_rho(self.x)
         self.update_pot()
-        crap = self.update_forces()
-        PE = np.sum(obj.rho * obj.pot)
+        PE2 = 0.5*np.sum(obj.rho * obj.pot)
+        self.update_forces()
         self.v[:]=self.v[:]+self.f*dt
-        KE = 0.5*np.sum(self.v**2)
+
+        PE = 0.5*(PE1+PE2)
         if(verbose):
-            print("PE", 0.5*PE, "crap", crap, "KE", KE, "Total E", 0.5*PE+KE, "vs", PE+KE)
-        return 0.5*PE+KE
+            print("PE", 0.5*PE, "crap", crap, "KE", KE, "Total E", 0.5*PE+KE)
+        return PE+KE
+
+    def run_leapfrog2(self, dt=1, verbose=False):
+
+        PE = 0.5 * np.sum(self.rho * self.pot)
+        KE = 0.5*np.sum(self.v[:]**2)
+        # vhalf = np.zeros((self.npart,2))
+        #
+        # cur_f = get_grad(self.x, self.pot, self.RES).copy()
+        # vhalf = self.v[:] + cur_f * dt/2 # half Euler step to get started
+        #
+        # self.x[:] = self.x[:] + dt * vhalf[:]
+        #
+        # self.update_rho(self.x)
+        # self.update_pot()
+        # new_f = get_grad(self.x, self.pot, self.RES).copy()
+        # self.v[:]=self.v[:]+0.5*dt*new_f
+        #
+        # cur_f[:] = new_f[:]
+
+
+        self.x[:] = self.x[:] + dt * self.v[:] + self.cur_f * dt * dt /2
+        self.update_rho(self.x)
+        self.update_pot()
+        self.new_f[:] = get_grad(self.x, self.pot, self.RES)
+        self.v[:] = self.v[:] + (self.cur_f + self.new_f)*dt/2
+        self.cur_f[:] = self.new_f[:]
+        return PE+KE
 
 
     def run_rk4(self,dt=1,verbose=False):
@@ -173,8 +205,9 @@ class nbody():
         v0 = self.v.copy()
         self.update_rho(x0)
         self.update_pot()
-        k1v, PE = get_grad(x0,self.pot,self.RES) # this gives current PE # v terms in accn unit
+        k1v = get_grad(x0,self.pot,self.RES) # this gives current PE # v terms in accn unit
         KE = 0.5 * np.sum(v0**2)
+        PE = 0.5 * np.sum(self.rho * self.pot)
 
         if (verbose):
             print("PE", PE, "KE", KE, "Total E", PE + KE)
@@ -182,24 +215,24 @@ class nbody():
         xx1=x0+k1x*dt/2
         self.update_rho(xx1)
         self.update_pot()
-        k2v, crap = get_grad(xx1, self.pot, self.RES)
+        k2v = get_grad(xx1, self.pot, self.RES)
         k2x = v0 + k1v*dt/2
 
         xx2=x0+k2x*dt/2
         self.update_rho(xx2)
         self.update_pot()
-        k3v, crap = get_grad(xx2, self.pot, self.RES)
+        k3v = get_grad(xx2, self.pot, self.RES)
         k3x = v0 + k2v*dt/2
 
         xx3=x0+k3x*dt
         self.update_rho(xx3)
         self.update_pot()
-        k4v, crap = get_grad(xx3, self.pot, self.RES)
+        k4v = get_grad(xx3, self.pot, self.RES)
         k4x = v0 + k3v*dt
 
         self.v[:] = self.v + (k1v+2*k2v+2*k3v+k4v)*dt/6
         self.x[:] = self.x + (k1x+2*k2x+2*k3x+k4x)*dt/6
-        return 0.5*PE + KE
+        return PE + KE
 
 
 
@@ -207,67 +240,66 @@ class nbody():
 
 
 if(__name__=="__main__"):
-    obj = nbody(5000,128,-128,soft=1,nside=128)
+    NSIDE = 256
+    XMAX=128
+    XMIN=-128
+    RES=(XMAX-XMIN)/NSIDE
+    NPART = 1
+    SOFT = 1
+    TSTEP = SOFT * RES / np.sqrt(NPART)  # this is generally smaller than eps**3/2
+    obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE)
 
-    # obj.ic_1part()
+
+    obj.ic_1part()
     # obj.ic_2part_circular()
     # obj.run(dt=0)
     # print(obj.grad)
-    obj.ics_2gauss() #to use this change lims to +/- 128 and particles to 5000
+    # v = np.sqrt(NPART*0.6/XMAX)
+    # obj.ics_2gauss(v) #to use this change lims to +/- 128 and particles to 5000
     # obj.ic_3part()
     # obj.ic_gauss()
-    # plt.ion()
-    # plt.imshow(obj.pot)
-    # plt.show()
-    # plt.pause(100)
-
+    obj.update_rho(obj.x)
+    obj.update_pot()
+    obj.cur_f[:] = get_grad(obj.x,obj.pot,obj.RES)
     frames = []  # for storing the generated images
-    # fig = plt.figure()
+    fig = plt.figure()
     fac=1
-    TE_old=0
-    for i in range(20000):
-        if(i%100==0):
-            verbosity=True
-        else:
-            verbosity=False
+    logfile = open('./dump.txt', 'w')
 
-        TE = obj.run_leapfrog(dt=0.005/fac,verbose=verbosity)
+    try:
+        for i in range(20000):
 
-        if(TE_old!=0):
-            # print(np.abs((TE-TE_old)/TE_old))
-            if(np.abs(TE-TE_old)/TE_old > 0.1):
-                print('changing')
-                fac=fac*2
-
-
-        # print(-obj.grad)
-        # plt.imshow(obj.pot)
-        # plt.pause(50)
-        # break
-        # print(obj.grad)
-        # plt.imshow(obj.pot)
-        # plt.show()
-        # plt.pause(5)
-        #
-        # break
-        if(i%100==0):
-            # print("iter", i)
-            # if (TE_old != 0):
-            #     # print(np.abs((TE-TE_old)/TE_old))
-            #     if (np.abs((TE - TE_old) / TE_old) > 0.005):
-            #         # plt.pause(10)
-            #         print('changing')
-            #         fac = fac * 2
-                # print(np.abs((TE - TE_old) / TE_old))
-            plt.clf()
-            plt.imshow(obj.rho)
-            plt.pause(0.05)
-            # frames.append([plt.imshow(obj.rho,animated=True)])
-            # if(len(frames)>50):
-            #     break
-            TE_old = TE
+            TE = obj.run_leapfrog2(dt=TSTEP)
+            print(obj.x)
+            print(TE)
+            if(i%10==0):
+                # print("iter", i)
+                # if (TE_old != 0):
+                #     # print(np.abs((TE-TE_old)/TE_old))
+                #     if (np.abs((TE - TE_old) / TE_old) > 0.005):
+                #         # plt.pause(10)
+                #         print('changing')
+                #         fac = fac * 2
+                    # print(np.abs((TE - TE_old) / TE_old))
+                #update TE_old=TE at the end
+                logfile.write(str(TE)+"\n")
+                # plt.clf()
+                frames.append([plt.imshow(obj.rho**0.5,cmap='inferno',animated=True)])
+                # plt.colorbar()
+                no_labels = 9  # how many labels to see on axis x
+                step = int(NSIDE / (no_labels - 1))  # step between consecutive labels
+                positions = np.arange(0, NSIDE + 1, step)  # pixel count at label position
+                labels = -positions*RES+XMAX  # labels you want to see --- imshow plots origin at top
+                plt.yticks(positions, labels)
+                plt.xticks(positions, labels)
+                plt.pause(0.5)
+    except KeyboardInterrupt as e:
+        pass
+    finally:
+        ani = animation.ArtistAnimation(fig, frames, interval=190, blit=True,
+                                        repeat_delay=500)
+        ani.save('./dump.gif', dpi=80, writer='imagemagick')
+        logfile.close()
 
 
-    # ani = animation.ArtistAnimation(fig, frames, interval=200, blit=True,
-    #                                 repeat_delay=500)
-    # ani.save('./5000_part_2gauss.gif', dpi=80, writer='imagemagick')
+
