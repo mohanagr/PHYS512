@@ -16,9 +16,9 @@ def get_grad(x,pot,RES):
     grad = np.zeros((npart,2))
     for i in nb.prange(npart):
         # print("Particle positions:", x[i])
-        irow = int(nside // 2 - x[i, 1] // RES - 1)  # row num is given by y position up down
+        irow = int(nside /2 - x[i, 1]/RES)  # row num is given by y position up down
         # but y made to vary 16 to -16 down. [0] is 16
-        icol = int(nside // 2 + x[i, 0] // RES)  # col num is given by x position left right
+        icol = int(nside /2 + x[i, 0]/RES)  # col num is given by x position left right
         # print("In indices ffrom grad", irow, icol, "actually", rho[irow,icol])
         # print(np.where(rho>0))
         #         print("pot 1 term", pot[(ix+1)%nside,iy])
@@ -35,9 +35,9 @@ def hist2d(x, mat, RES):
     nside = mat.shape[0]
     # temp = np.zeros((nside, nside))
     for i in range(x.shape[0]):
-        irow = int(nside // 2 - x[i, 1] // RES - 1)  # row num is given by y position up down
+        irow = int(nside/2 - x[i, 1]/RES)  # row num is given by y position up down
         # but y made to vary 16 to -16 down. [0] is 16
-        icol = int(nside // 2 + x[i, 0] // RES)
+        icol = int(nside/2 + x[i, 0]/RES)
         mat[irow,icol]+=1
 
 
@@ -95,8 +95,8 @@ class nbody():
         self.v[0, 0] = np.sqrt(1/8)
         self.v[1, 0] = -np.sqrt(1/8)
 
-        # self.v[0, 1] = 0.2
-        # self.v[1, 1] = 0.2
+        self.v[0, 1] = 0.2
+        self.v[1, 1] = 0.2
 
 
     def ic_gauss(self):
@@ -240,18 +240,18 @@ class nbody():
 
 
 if(__name__=="__main__"):
-    NSIDE = 256
-    XMAX=128
-    XMIN=-128
+    NSIDE = 128
+    XMAX=16
+    XMIN=-16
     RES=(XMAX-XMIN)/NSIDE
-    NPART = 1
+    NPART = 2
     SOFT = 1
     TSTEP = SOFT * RES / np.sqrt(NPART)  # this is generally smaller than eps**3/2
     obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE)
 
 
-    obj.ic_1part()
-    # obj.ic_2part_circular()
+    # obj.ic_1part()
+    obj.ic_2part_circular()
     # obj.run(dt=0)
     # print(obj.grad)
     # v = np.sqrt(NPART*0.6/XMAX)
@@ -270,9 +270,10 @@ if(__name__=="__main__"):
         for i in range(20000):
 
             TE = obj.run_leapfrog2(dt=TSTEP)
-            print(obj.x)
-            print(TE)
+            # print(obj.x)
+            # print(TE)
             if(i%10==0):
+                print(TE)
                 # print("iter", i)
                 # if (TE_old != 0):
                 #     # print(np.abs((TE-TE_old)/TE_old))
