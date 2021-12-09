@@ -210,6 +210,33 @@ class nbody():
         self.rhoft = np.fft.rfft2(self.rho)
         # print(self.rho.shape,self.rhoft.shape,self.kernelft.shape)
 
+    def custom_update_rho(self,x,update_mask=False):
+        '''
+        This method is for Runge-Kutta.
+        We don't want to update the mask at intermediate steps
+        '''
+        bins = self.RES*(np.arange(self.nside+1)-self.nside//2) #can equivalentlly use fftshift
+        # since each cell is a bin, we have Nside bins, need Nside+1 points
+
+        if(self.periodic):
+            x = self.enforce_period(x) # had to figure out the hard way : with fancy indexing numpy doesnt always return a view, it's a copy
+        else:
+            if(update_mask):
+                # print("NP WHERE",np.where(np.logical_or(self.x > self.XMAX, self.x < self.XMIN))[0])
+                self.mask[np.where(np.logical_or(x > self.XMAX, x < self.XMIN))[0]] = False
+
+        # print("after enforce", self.x.shape, self.x[:, 0].min(), self.x[:, 0].max())
+        # self.rho, xedges, yedges = np.histogram2d(x[:, 1], x[:, 0], bins=bins)
+        # self.rho = np.flipud(self.rho).copy()
+        self.rho[:] = 0
+
+        hist2d(x[self.mask],self.rho[:self.nside,:self.nside],self.RES)
+        # print(bins, self.RES)
+        # we want y as top down, x as left right, and y starting 16 at top -16 at bottom
+
+        self.rhoft = np.fft.rfft2(self.rho)
+        # print(self.rho.shape,self.rhoft.shape,self.kernelft.shape)
+
     def update_pot(self):
         # print(self.kernel)
         self.pot = np.fft.irfft2(self.rhoft * self.kernelft)
@@ -224,12 +251,12 @@ class nbody():
 
     def run_leapfrog(self, dt=1, verbose=False):
         KE = 0.5 * np.sum(self.v[self.mask] ** 2)
-        PE1 = 0.5 * np.sum(obj.rho * obj.pot)
+        PE1 = 0.5 * np.sum(obj.rho[:self.nside,:self.nside] * obj.pot[:self.nside,:self.nside])
         # print("update to x gonna be: ",dt * self.v[self.mask])
         self.x[self.mask] = self.x[self.mask] + dt * self.v[self.mask]
         self.update_rho()
         self.update_pot()
-        PE2 = 0.5*np.sum(obj.rho * obj.pot)
+        PE2 = 0.5 * np.sum(obj.rho[:self.nside,:self.nside] * obj.pot[:self.nside,:self.nside])
         self.update_forces()
         # print("FORCE IS",self.f)
         self.v[self.mask]=self.v[self.mask]+self.f[self.mask]*dt # set it up such that dimension of f changes
@@ -259,7 +286,7 @@ class nbody():
 
 
         self.x[self.mask] = self.x[self.mask] + dt * self.v[self.mask] + self.cur_f * dt * dt /2
-        self.update_rho(self.x[self.mask])
+        self.update_rho()
         self.update_pot()
         self.new_f = get_grad(self.x[self.mask], self.pot, self.RES)
         self.v[self.mask] = self.v[self.mask] + (self.cur_f + self.new_f)*dt/2
@@ -267,39 +294,50 @@ class nbody():
         return PE+KE
 
 
-    def run_rk4(self,dt=1,verbose=False):
+    def run_rk4(self,dt=1):
 
         x0 = self.x.copy()
         v0 = self.v.copy()
-        self.update_rho(x0)
-        self.update_pot()
-        k1v = get_grad(x0,self.pot,self.RES) # this gives current PE # v terms in accn unit
+        k1x = np.zeros((self.npart, 2))
+        k1v = np.zeros((self.npart, 2))
+        k2x = np.zeros((self.npart, 2))
+        k2v = np.zeros((self.npart, 2))
+        k3x = np.zeros((self.npart, 2))
+        k3v = np.zeros((self.npart, 2))
+        k4x = np.zeros((self.npart, 2))
+        k4v = np.zeros((self.npart, 2))
+        xx1 = np.zeros((self.npart, 2))
+        xx2 = np.zeros((self.npart, 2))
+        xx3 = np.zeros((self.npart, 2))
+
+        k1v = get_grad(x0[self.mask],self.pot[:self.nside,:self.nside],self.RES) # this gives current PE # v terms in accn unit
         KE = 0.5 * np.sum(v0**2)
-        PE = 0.5 * np.sum(self.rho * self.pot)
-
-        if (verbose):
-            print("PE", PE, "KE", KE, "Total E", PE + KE)
-        k1x = v0 # x terms in vel unit
-        xx1=x0+k1x*dt/2
-        self.update_rho(xx1)
+        PE = 0.5 * np.sum(self.rho[:self.nside,:self.nside] * self.pot[:self.nside,:self.nside])
+        k1x[self.mask] = v0[self.mask] # x terms in vel unit
+        xx1[self.mask]=x0[self.mask]+k1x[self.mask]*dt/2
+        self.custom_update_rho(xx1[self.mask])
         self.update_pot()
-        k2v = get_grad(xx1, self.pot, self.RES)
-        k2x = v0 + k1v*dt/2
+        k2v[self.mask] = get_grad(xx1[self.mask], self.pot[:self.nside,:self.nside], self.RES)
+        k2x[self.mask] = v0[self.mask] + k1v[self.mask]*dt/2
 
-        xx2=x0+k2x*dt/2
-        self.update_rho(xx2)
+        xx2[self.mask]=x0[self.mask]+k2x[self.mask]*dt/2
+        self.custom_update_rho(xx2[self.mask])
         self.update_pot()
-        k3v = get_grad(xx2, self.pot, self.RES)
-        k3x = v0 + k2v*dt/2
+        k3v[self.mask] = get_grad(xx2[self.mask], self.pot[:self.nside,:self.nside], self.RES)
+        k3x[self.mask] = v0[self.mask] + k2v[self.mask]*dt/2
 
-        xx3=x0+k3x*dt
-        self.update_rho(xx3)
+        xx3[self.mask]=x0[self.mask]+k3x[self.mask]*dt
+        self.custom_update_rho(xx3[self.mask])
         self.update_pot()
-        k4v = get_grad(xx3, self.pot, self.RES)
-        k4x = v0 + k3v*dt
+        k4v[self.mask] = get_grad(xx3[self.mask], self.pot[:self.nside,:self.nside], self.RES)
+        k4x[self.mask] = v0[self.mask] + k3v[self.mask]*dt
 
-        self.v[:] = self.v + (k1v+2*k2v+2*k3v+k4v)*dt/6
-        self.x[:] = self.x + (k1x+2*k2x+2*k3x+k4x)*dt/6
+        self.v[self.mask] = self.v[self.mask] + (k1v[self.mask]+2*k2v[self.mask]+2*k3v[self.mask]+k4v[self.mask])*dt/6
+        self.x[self.mask] = self.x[self.mask] + (k1x[self.mask]+2*k2x[self.mask]+2*k3x[self.mask]+k4x[self.mask])*dt/6
+
+        self.update_rho() # this will update the mask acc to actual x position
+        self.update_pot()
+
         return PE + KE
 
 
@@ -312,18 +350,18 @@ if(__name__=="__main__"):
     XMAX=16
     XMIN=-16
     RES=(XMAX-XMIN)/NSIDE
-    NPART = 2
-    SOFT = 1
-    TSTEP = SOFT * RES / np.sqrt(NPART)  # this is generally smaller than eps**3/2
-    obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE,periodic=True)
+    NPART = 50000
+    SOFT = 2
+    TSTEP = 0.2*SOFT * RES / np.sqrt(NPART)  # this is generally smaller than eps**3/2
+    obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE,periodic=False)
 
 
     # obj.ic_1part()
-    obj.ic_2part_circular()
+    # obj.ic_2part_circular()
     # obj.run(dt=0)
     # print(obj.grad)
-    # v = np.sqrt(NPART*0.6/XMAX)
-    # obj.ics_2gauss(v) #to use this change lims to +/- 128 and particles to 5000
+    v = 1.5*np.sqrt(NPART*0.6/XMAX)
+    obj.ics_2gauss(v) #to use this change lims to +/- 128 and particles to 5000
     # obj.ic_3part()
     # obj.ic_gauss()
     obj.update_rho()
@@ -339,10 +377,11 @@ if(__name__=="__main__"):
     try:
         for i in range(20000):
 
-            TE = obj.run_leapfrog(dt=TSTEP)
+            TE = obj.run_rk4(dt=TSTEP)
             # print(obj.x)
 
-            if(i%5==0):
+            if(i%10==0):
+                print(TE)
                 # print("iter", i)
                 # if (TE_old != 0):
                 #     # print(np.abs((TE-TE_old)/TE_old))
@@ -366,11 +405,11 @@ if(__name__=="__main__"):
                 plt.pause(0.01)
     except KeyboardInterrupt as e:
         pass
-    # finally:
-    #     ani = animation.ArtistAnimation(fig, frames, interval=190, blit=True,
-    #                                     repeat_delay=500)
-    #     ani.save('./dump.gif', dpi=80, writer='imagemagick')
-    #     logfile.close()
+    finally:
+        ani = animation.ArtistAnimation(fig, frames, interval=200, blit=True,
+                                        repeat_delay=500)
+        ani.save('./dump.gif', dpi=80, writer='imagemagick')
+        logfile.close()
 
 
 
