@@ -253,13 +253,13 @@ class nbody():
         KE = 0.5 * np.sum(self.v[self.mask] ** 2)
         PE1 = 0.5 * np.sum(obj.rho[:self.nside,:self.nside] * obj.pot[:self.nside,:self.nside])
         # print("update to x gonna be: ",dt * self.v[self.mask])
-        self.x[self.mask] = self.x[self.mask] + dt * self.v[self.mask]
+        self.x = self.x + dt * self.v
         self.update_rho()
         self.update_pot()
         PE2 = 0.5 * np.sum(obj.rho[:self.nside,:self.nside] * obj.pot[:self.nside,:self.nside])
         self.update_forces()
         # print("FORCE IS",self.f)
-        self.v[self.mask]=self.v[self.mask]+self.f[self.mask]*dt # set it up such that dimension of f changes
+        self.v =self.v +self.f*dt
 
         PE = 0.5*(PE1+PE2)
         if(verbose):
@@ -293,56 +293,33 @@ class nbody():
         self.cur_f = self.new_f
         return PE+KE
 
+    def get_derivs(self,xx):
+        nn = self.npart
+        x = xx[:nn, :]
+        v = xx[nn:, :]
+        f = np.zeros((self.npart,2))
+
+        self.custom_update_rho(x, update_mask=True) # rho always uses the masked x
+        self.update_pot()
+        f[self.mask] = get_grad(x[self.mask], self.pot[:self.nside,:self.nside], self.RES)
+        return np.vstack([v, f])
 
     def run_rk4(self,dt=1):
-
-        x0 = self.x.copy()
-        v0 = self.v.copy()
-        k1x = np.zeros((self.npart, 2))
-        k1v = np.zeros((self.npart, 2))
-        k2x = np.zeros((self.npart, 2))
-        k2v = np.zeros((self.npart, 2))
-        k3x = np.zeros((self.npart, 2))
-        k3v = np.zeros((self.npart, 2))
-        k4x = np.zeros((self.npart, 2))
-        k4v = np.zeros((self.npart, 2))
-        xx1 = np.zeros((self.npart, 2))
-        xx2 = np.zeros((self.npart, 2))
-        xx3 = np.zeros((self.npart, 2))
-
-        k1v = get_grad(x0[self.mask],self.pot[:self.nside,:self.nside],self.RES) # this gives current PE # v terms in accn unit
-        KE = 0.5 * np.sum(v0**2)
         PE = 0.5 * np.sum(self.rho[:self.nside,:self.nside] * self.pot[:self.nside,:self.nside])
-        k1x[self.mask] = v0[self.mask] # x terms in vel unit
-        xx1[self.mask]=x0[self.mask]+k1x[self.mask]*dt/2
-        self.custom_update_rho(xx1[self.mask])
-        self.update_pot()
-        k2v[self.mask] = get_grad(xx1[self.mask], self.pot[:self.nside,:self.nside], self.RES)
-        k2x[self.mask] = v0[self.mask] + k1v[self.mask]*dt/2
+        KE = 0.5 * np.sum(self.v[self.mask] ** 2)
+        xx = np.vstack([self.x, self.v])
+        k1 = self.get_derivs(xx)
+        k2 = self.get_derivs(xx + k1 * dt / 2)
+        k3 = self.get_derivs(xx + k2 * dt / 2)
+        k4 = self.get_derivs(xx + k3 * dt)
 
-        xx2[self.mask]=x0[self.mask]+k2x[self.mask]*dt/2
-        self.custom_update_rho(xx2[self.mask])
-        self.update_pot()
-        k3v[self.mask] = get_grad(xx2[self.mask], self.pot[:self.nside,:self.nside], self.RES)
-        k3x[self.mask] = v0[self.mask] + k2v[self.mask]*dt/2
+        tot = (k1 + 2 * k2 + 2 * k3 + k4) / 6
 
-        xx3[self.mask]=x0[self.mask]+k3x[self.mask]*dt
-        self.custom_update_rho(xx3[self.mask])
-        self.update_pot()
-        k4v[self.mask] = get_grad(xx3[self.mask], self.pot[:self.nside,:self.nside], self.RES)
-        k4x[self.mask] = v0[self.mask] + k3v[self.mask]*dt
+        nn = self.npart
 
-        self.v[self.mask] = self.v[self.mask] + (k1v[self.mask]+2*k2v[self.mask]+2*k3v[self.mask]+k4v[self.mask])*dt/6
-        self.x[self.mask] = self.x[self.mask] + (k1x[self.mask]+2*k2x[self.mask]+2*k3x[self.mask]+k4x[self.mask])*dt/6
-
-        self.update_rho() # this will update the mask acc to actual x position
-        self.update_pot()
-
-        return PE + KE
-
-
-
-
+        self.x[:] = self.x[:] + tot[:nn, :] * dt
+        self.v[:] = self.v[:] + tot[nn:, :] * dt
+        return PE+KE
 
 
 if(__name__=="__main__"):
@@ -353,7 +330,7 @@ if(__name__=="__main__"):
     NPART = 50000
     SOFT = 2
     TSTEP = 0.2*SOFT * RES / np.sqrt(NPART)  # this is generally smaller than eps**3/2
-    obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE,periodic=False)
+    obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE,periodic=True)
 
 
     # obj.ic_1part()
@@ -375,7 +352,7 @@ if(__name__=="__main__"):
     logfile = open('./dump.txt', 'w')
 
     try:
-        for i in range(20000):
+        for i in range(1200):
 
             TE = obj.run_rk4(dt=TSTEP)
             # print(obj.x)
