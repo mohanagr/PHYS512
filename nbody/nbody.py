@@ -2,18 +2,15 @@ import numpy as np
 import numba as nb
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import sys
-#select all occurence shift ctrl alt j
-# repeat line ctrl d
+from time import time
 
 np.random.seed(42)
 
 @nb.njit(parallel=True)
-def get_grad(x,pot,RES):
-    PE = 0
+def get_grad(x,pot,RES,grad):
     nside = pot.shape[0]
     npart = x.shape[0]
-    grad = np.zeros((npart,2))
+
     for i in nb.prange(npart):
         # print("Particle positions:", x[i])
         irow = int(nside /2 - x[i, 1]/RES)  # row num is given by y position up down
@@ -23,23 +20,58 @@ def get_grad(x,pot,RES):
         # print(np.where(rho>0))
         #         print("pot 1 term", pot[(ix+1)%nside,iy])
         #         print("pot 2 term", pot[ix-1,iy])
-        grad[i, 1] = 0.5 * (pot[(irow - 1), icol] - pot[(irow + 1) % nside, icol]) / RES
+        grad[i, 1] = -0.5 * (pot[(irow - 1), icol] - pot[(irow + 1) % nside, icol]) / RES
         # y decreases with high row num.
-        grad[i, 0] = 0.5 * (pot[irow, (icol + 1) % nside] - pot[irow, icol - 1]) / RES
+        grad[i, 0] = -0.5 * (pot[irow, (icol + 1) % nside] - pot[irow, icol - 1]) / RES
         # print(self.grad)
-    return -grad
 
-@nb.njit
+@nb.njit(parallel=True)
 def hist2d(x, mat, RES):
     # this is better than numpy.hist because of parallelization
     nside = mat.shape[0]
     # temp = np.zeros((nside, nside))
-    for i in range(x.shape[0]):
-        irow = int(nside/2 - x[i, 1]/RES)  # row num is given by y position up down
-        # but y made to vary 16 to -16 down. [0] is 16
+    for i in nb.prange(x.shape[0]):
+        irow = int(nside/2 - x[i, 1]/RES)
         icol = int(nside/2 + x[i, 0]/RES)
         mat[irow,icol]+=1
 
+# def enforce_period(x):
+#     XMAX=128
+#     XMIN=-128
+#     x[np.logical_or(x > XMAX, x < XMIN)] = x[np.logical_or(x > XMAX, x < XMIN)] % (XMAX - XMIN)
+#     x[x > XMAX] = x[x > XMAX] - (XMAX - XMIN)
+
+# @nb.njit(parallel=True)
+# def enforce_period_nb(x):
+#     XMAX=128
+#     XMIN=-128
+#     for i in range(x.shape[0]):
+#         if(x[i,0]>XMAX or x[i,0]<XMIN):
+#             x[i,0]=x[i,0]%(XMAX-XMIN)
+#             if(x[i,0]>XMAX): x[i,0]=x[i,0]-XMAX+XMIN
+#         if(x[i,1]>XMAX or x[i,1]<XMIN):
+#             x[i,1]=x[i,1]%(XMAX-XMIN)
+#             if (x[i, 1] > XMAX): x[i, 1] = x[i, 1] - XMAX + XMIN
+
+@nb.njit
+def enforce_period_nb(x,XMAX,XMIN):
+    W = XMAX-XMIN
+    for i in range(x.shape[0]):   #prange gives an error here. some bug in numba on googling
+        while(x[i,0]>XMAX):
+            x[i,0]-=W
+        while(x[i,0]<XMIN):
+            x[i,0]+=W
+        while(x[i,1]>XMAX):
+            x[i,1]-=W
+        while(x[i,1]<XMIN):
+            x[i,1]+=W
+
+# def enforce_period(x):
+#     W = 256
+#     XMAX = 128
+#     XMIN = -128
+#     x[x>XMAX] = x[x>XMAX] - W
+#     x[x<XMIN] = x[x<XMIN] + W
 
 class nbody():
 
@@ -47,6 +79,7 @@ class nbody():
         self.nside=nside
         self.x=np.zeros([npart,2])
         self.f=np.zeros([npart,2])
+        self.grad=np.zeros([npart,2])
         self.cur_f = np.zeros([npart, 2]) # these are for leapfrog v2
         self.new_f = np.zeros([npart, 2]) # ------ DITTO -----------
         self.v=np.zeros([npart,2])
@@ -115,192 +148,96 @@ class nbody():
         self.x[2,:] = [2, -2]
 
 
-
-    def enforce_period(self, x):
-        x[np.logical_or(x > self.XMAX, x < self.XMIN)] = x[np.logical_or(x > self.XMAX, x < self.XMIN)] % (self.XMAX - self.XMIN)
-        x[x > self.XMAX] = x[x > self.XMAX] - (self.XMAX - self.XMIN)
-
-    def set_grad(self):
-        for i in range(self.npart):
-            # print("Particle positions:", self.x[i])
-            irow = int(self.nside // 2 - self.x[i, 1] // self.RES -1) # row num is given by y position up down
-            # but y made to vary 16 to -16 down. [0] is 16
-            icol = int(self.nside // 2 + self.x[i, 0] // self.RES) # col num is given by x position left right
-            # print("In indices ffrom grad", irow, icol, "actually", self.rho[irow,icol])
-            # print(np.where(self.rho>0))
-            #         print("pot 1 term", pot[(ix+1)%self.nside,iy])
-            #         print("pot 2 term", pot[ix-1,iy])
-            self.grad[i, 1] = 0.5 * (self.pot[(irow - 1), icol] - self.pot[(irow+1)%self.nside, icol]) / self.RES
-            # y decreases with high row num.
-            self.grad[i, 0] = 0.5 * (self.pot[irow, (icol + 1) % self.nside] - self.pot[irow, icol - 1]) / self.RES
-
-
-
-    def update_rho(self, x):
-        bins = self.RES*(np.arange(self.nside+1)-self.nside//2) #can equivalentlly use fftshift
-        # since each cell is a bin, we have Nside bins, need Nside+1 points
-
-        self.enforce_period(x)
+    def update_rho(self):
+        enforce_period_nb(self.x,self.XMAX,self.XMIN)
         # self.rho, xedges, yedges = np.histogram2d(x[:, 1], x[:, 0], bins=bins)
         # self.rho = np.flipud(self.rho).copy()
         self.rho[:] = 0
-        hist2d(x,self.rho,self.RES)
+        hist2d(self.x,self.rho,self.RES)
         # print(bins, self.RES)
-        # we want y as top down, x as left right, and y starting 16 at top -16 at bottom
+        # we want y as top down, self.x as left right, and y starting 16 at top -16 at bottom
         self.rhoft = np.fft.rfft2(self.rho)
 
     def update_pot(self):
+        self.update_rho()
         self.pot = np.fft.irfft2(self.rhoft * self.kernelft, [self.nside, self.nside])
 
     def update_forces(self):
-        self.f[:] = get_grad(self.x, self.pot, self.RES)
+        get_grad(self.x, self.pot, self.RES,self.grad)
+        self.f[:] = self.grad
         # return get_grad(self.x, self.pot, self.RES)
 
     def run_leapfrog(self, dt=1, verbose=False):
-        KE = 0.5 * np.sum(self.v ** 2)
-        PE1 = 0.5 * np.sum(obj.rho * obj.pot)
         self.x[:] = self.x[:] + dt * self.v
-        self.update_rho(self.x)
         self.update_pot()
-        PE2 = 0.5*np.sum(obj.rho * obj.pot)
         self.update_forces()
         self.v[:]=self.v[:]+self.f*dt
 
-        PE = 0.5*(PE1+PE2)
-        if(verbose):
-            print("PE", 0.5*PE, "crap", crap, "KE", KE, "Total E", 0.5*PE+KE)
-        return PE+KE
 
     def run_leapfrog2(self, dt=1, verbose=False):
-
-        PE = 0.5 * np.sum(self.rho * self.pot)
-        KE = 0.5*np.sum(self.v[:]**2)
-        # vhalf = np.zeros((self.npart,2))
-        #
-        # cur_f = get_grad(self.x, self.pot, self.RES).copy()
-        # vhalf = self.v[:] + cur_f * dt/2 # half Euler step to get started
-        #
-        # self.x[:] = self.x[:] + dt * vhalf[:]
-        #
-        # self.update_rho(self.x)
-        # self.update_pot()
-        # new_f = get_grad(self.x, self.pot, self.RES).copy()
-        # self.v[:]=self.v[:]+0.5*dt*new_f
-        #
-        # cur_f[:] = new_f[:]
-
-
+        #initialize cur_f to use this version
         self.x[:] = self.x[:] + dt * self.v[:] + self.cur_f * dt * dt /2
-        self.update_rho(self.x)
         self.update_pot()
         self.new_f[:] = get_grad(self.x, self.pot, self.RES)
         self.v[:] = self.v[:] + (self.cur_f + self.new_f)*dt/2
         self.cur_f[:] = self.new_f[:]
-        return PE+KE
 
+def init_anim():
+    img.set_data(np.zeros((1024,1024)))
+    return img,
 
-    def run_rk4(self,dt=1,verbose=False):
+def animate(i):
+    PE1 = 0.25 * np.sum(obj.pot * obj.rho)  # at 0 step
+    KE=0.5*np.sum(obj.v**2) # at half step
+    st = time()
+    obj.run_leapfrog(dt=0.001)
+    et = time()
+    PE2 = 0.25 * np.sum(obj.pot * obj.rho)  # at 1 step
+    if(i%100==0):
+        print("FRAME:",i, et - st, PE1 + PE2 + KE)
+    img.set_data(obj.rho**0.5)
 
-        x0 = self.x.copy()
-        v0 = self.v.copy()
-        self.update_rho(x0)
-        self.update_pot()
-        k1v = get_grad(x0,self.pot,self.RES) # this gives current PE # v terms in accn unit
-        KE = 0.5 * np.sum(v0**2)
-        PE = 0.5 * np.sum(self.rho * self.pot)
-
-        if (verbose):
-            print("PE", PE, "KE", KE, "Total E", PE + KE)
-        k1x = v0 # x terms in vel unit
-        xx1=x0+k1x*dt/2
-        self.update_rho(xx1)
-        self.update_pot()
-        k2v = get_grad(xx1, self.pot, self.RES)
-        k2x = v0 + k1v*dt/2
-
-        xx2=x0+k2x*dt/2
-        self.update_rho(xx2)
-        self.update_pot()
-        k3v = get_grad(xx2, self.pot, self.RES)
-        k3x = v0 + k2v*dt/2
-
-        xx3=x0+k3x*dt
-        self.update_rho(xx3)
-        self.update_pot()
-        k4v = get_grad(xx3, self.pot, self.RES)
-        k4x = v0 + k3v*dt
-
-        self.v[:] = self.v + (k1v+2*k2v+2*k3v+k4v)*dt/6
-        self.x[:] = self.x + (k1x+2*k2x+2*k3x+k4x)*dt/6
-        return PE + KE
-
-
-
-
+    return img,
 
 
 if(__name__=="__main__"):
-    NSIDE = 128
-    XMAX=16
-    XMIN=-16
+    NSIDE = 1024
+    XMAX=128
+    XMIN=-128
     RES=(XMAX-XMIN)/NSIDE
-    NPART = 2
-    SOFT = 1
+    NPART = 1000000
+    SOFT = 2
     TSTEP = SOFT * RES / np.sqrt(NPART)  # this is generally smaller than eps**3/2
     obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE)
 
 
     # obj.ic_1part()
-    obj.ic_2part_circular()
+    # obj.ic_2part_circular()
     # obj.run(dt=0)
     # print(obj.grad)
-    # v = np.sqrt(NPART*0.6/XMAX)
-    # obj.ics_2gauss(v) #to use this change lims to +/- 128 and particles to 5000
+    v = np.sqrt(NPART*0.6/XMAX)
+    obj.ics_2gauss(50) #to use this change lims to +/- 128 and particles to 5000
     # obj.ic_3part()
     # obj.ic_gauss()
-    obj.update_rho(obj.x)
     obj.update_pot()
-    obj.cur_f[:] = get_grad(obj.x,obj.pot,obj.RES)
+    # obj.cur_f[:] = get_gad(obj.x,obj.pot,obj.RES)
+
     frames = []  # for storing the generated images
-    fig = plt.figure()
-    fac=1
-    logfile = open('./dump.txt', 'w')
+    fig, ax = plt.subplots(1,1)
+    fig.set_size_inches((6,6))
+    img = ax.imshow(obj.rho ** 0.5,cmap='inferno',animated=True)
+    no_labels = 9  # how many labels to see on axis x
+    step = int(NSIDE / (no_labels - 1))  # step between consecutive labels
+    positions = np.arange(0, NSIDE + 1, step)  # pixel count at label position
+    labels = -positions * RES + XMAX  # labels you want to see --- imshow plots origin at top
+    ax.set_yticks(positions, labels)
+    ax.set_xticks(positions, labels)
 
-    try:
-        for i in range(20000):
+    anim = animation.FuncAnimation(fig, animate, init_func=init_anim, repeat=True,frames=4000, interval=20, blit=True, repeat_delay=1000)
+    FFwriter = animation.FFMpegWriter(fps=40, extra_args=['-vcodec', 'libx264'])
+    anim.save('./dump.mp4',writer=FFwriter)
 
-            TE = obj.run_leapfrog2(dt=TSTEP)
-            # print(obj.x)
-            # print(TE)
-            if(i%10==0):
-                print(TE)
-                # print("iter", i)
-                # if (TE_old != 0):
-                #     # print(np.abs((TE-TE_old)/TE_old))
-                #     if (np.abs((TE - TE_old) / TE_old) > 0.005):
-                #         # plt.pause(10)
-                #         print('changing')
-                #         fac = fac * 2
-                    # print(np.abs((TE - TE_old) / TE_old))
-                #update TE_old=TE at the end
-                logfile.write(str(TE)+"\n")
-                # plt.clf()
-                frames.append([plt.imshow(obj.rho**0.5,cmap='inferno',animated=True)])
-                # plt.colorbar()
-                no_labels = 9  # how many labels to see on axis x
-                step = int(NSIDE / (no_labels - 1))  # step between consecutive labels
-                positions = np.arange(0, NSIDE + 1, step)  # pixel count at label position
-                labels = -positions*RES+XMAX  # labels you want to see --- imshow plots origin at top
-                plt.yticks(positions, labels)
-                plt.xticks(positions, labels)
-                plt.pause(0.5)
-    except KeyboardInterrupt as e:
-        pass
-    finally:
-        ani = animation.ArtistAnimation(fig, frames, interval=190, blit=True,
-                                        repeat_delay=500)
-        ani.save('./dump.gif', dpi=80, writer='imagemagick')
-        logfile.close()
+
 
 
 
