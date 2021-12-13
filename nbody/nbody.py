@@ -3,9 +3,6 @@ import numba as nb
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from time import time
-import sys
-#select all occurence shift ctrl alt j
-# repeat line ctrl d
 
 np.random.seed(42)
 
@@ -17,23 +14,10 @@ def get_grad(x,pot,RES,periodic=True):
     grad = np.zeros((npart,2))
 
     for i in nb.prange(npart):
-        # print("Particle positions:", x[i])
-        # if(np.abs(x[i,0])>RES*nside//2): x[i,0] = np.round(x[i,0]) # save yourself some roundoff errors
-        # if (np.abs(x[i, 1]) > RES * nside // 2): x[i, 1] = np.round(x[i, 1])
-        #
+
         irow = int(nside /2 - x[i, 1]/RES)  # row num is given by y position up down
         # but y made to vary 16 to -16 down. [0] is 16
         icol = int(nside /2 + x[i, 0]/RES) # col num is given by x position left right
-
-        # irow = int(nside // 2 - x[i, 1] // RES - 1)  # row num is given by y position up down
-        # # but y made to vary 16 to -16 down. [0] is 16
-        # icol = int(nside // 2 + x[i, 0] // RES)
-        # print("In indices ffrom grad", irow, icol, "actually", rho[irow,icol])
-        # print(np.where(rho>0))
-        #         print("pot 1 term", pot[(ix+1)%nside,iy])
-        #         print("pot 2 term", pot[ix-1,iy])
-        # print(x[i, 0], x[i, 1])
-        # print(irow, icol)
 
         if(periodic):
             grad[i, 1] = 0.5 * (pot[(irow - 1), icol] - pot[(irow + 1) % nside, icol]) / RES
@@ -230,19 +214,16 @@ class nbody():
         self.rho[:] = 0
 
         hist2d(x[self.mask],self.rho[:self.nside,:self.nside],self.RES)
-        # print(bins, self.RES)
+
         # we want y as top down, x as left right, and y starting 16 at top -16 at bottom
 
         self.rhoft = np.fft.rfft2(self.rho)
         # print(self.rho.shape,self.rhoft.shape,self.kernelft.shape)
 
     def update_pot(self):
-        # print(self.kernel)
+
         self.pot = np.fft.irfft2(self.rhoft * self.kernelft)
-        # print(self.pot.shape)
-        # plt.imshow(self.pot[:self.nside, :self.nside])
-        # plt.pause(50)
-        # sys.exit(0)
+
 
     def update_forces(self):
         self.f[self.mask] = get_grad(self.x[self.mask], self.pot[:self.nside,:self.nside], self.RES,periodic=self.periodic)
@@ -269,21 +250,6 @@ class nbody():
 
         PE = 0.5 * np.sum(self.rho * self.pot)
         KE = 0.5*np.sum(self.v[self.mask]**2)
-        # vhalf = np.zeros((self.npart,2))
-        #
-        # cur_f = get_grad(self.x, self.pot, self.RES).copy()
-        # vhalf = self.v[:] + cur_f * dt/2 # half Euler step to get started
-        #
-        # self.x[:] = self.x[:] + dt * vhalf[:]
-        #
-        # self.update_rho(self.x)
-        # self.update_pot()
-        # new_f = get_grad(self.x, self.pot, self.RES).copy()
-        # self.v[:]=self.v[:]+0.5*dt*new_f
-        #
-        # cur_f[:] = new_f[:]
-
-
         self.x[self.mask] = self.x[self.mask] + dt * self.v[self.mask] + self.cur_f * dt * dt /2
         self.update_rho()
         self.update_pot()
