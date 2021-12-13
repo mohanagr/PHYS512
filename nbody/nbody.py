@@ -2,6 +2,7 @@ import numpy as np
 import numba as nb
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from time import time
 import sys
 #select all occurence shift ctrl alt j
 # repeat line ctrl d
@@ -148,8 +149,6 @@ class nbody():
         # place one particle at (0,0) with zero velocity
         self.x[0,0] = 0
         self.x[0,1] = 0
-        self.v[0,0] = 0
-        self.v[0,1] = 0.2
 
     def ic_2part_circular(self):
         self.x[0, 0] = 0
@@ -322,23 +321,42 @@ class nbody():
         return PE+KE
 
 
+def init_anim():
+    img.set_data(np.zeros((1024,1024)))
+    return img,
+
+def animate(i):
+    PE1 = 0.25 * np.sum(obj.pot * obj.rho)  # at 0 step
+    KE=0.5*np.sum(obj.v**2) # at half step
+    st = time()
+    obj.run_rk4(dt=0.001)
+    et = time()
+    PE2 = 0.25 * np.sum(obj.pot * obj.rho)  # at 1 step
+    if(i%10==0):
+        print("FRAME:",i, et - st, PE1 + PE2 + KE)
+        ax.set_title(f"time {i}, Energy {PE1+PE2+KE}")
+    img.set_data(obj.rho**0.5)
+
+    return img,
+
+
 if(__name__=="__main__"):
     NSIDE = 128
     XMAX=16
     XMIN=-16
     RES=(XMAX-XMIN)/NSIDE
-    NPART = 50000
+    NPART = 1
     SOFT = 2
     TSTEP = 0.2*SOFT * RES / np.sqrt(NPART)  # this is generally smaller than eps**3/2
     obj = nbody(NPART,XMAX,XMIN,soft=SOFT,nside=NSIDE,periodic=True)
 
 
-    # obj.ic_1part()
+    obj.ic_1part()
     # obj.ic_2part_circular()
     # obj.run(dt=0)
     # print(obj.grad)
-    v = 1.5*np.sqrt(NPART*0.6/XMAX)
-    obj.ics_2gauss(v) #to use this change lims to +/- 128 and particles to 5000
+    # v = 1.5*np.sqrt(NPART*0.6/XMAX)
+    # obj.ics_2gauss(v) #to use this change lims to +/- 128 and particles to 5000
     # obj.ic_3part()
     # obj.ic_gauss()
     obj.update_rho()
@@ -346,47 +364,21 @@ if(__name__=="__main__"):
     # plt.imshow(obj.rho)
     # plt.pause(10)
     # obj.cur_f[:] = get_grad(obj.x,obj.pot,obj.RES)
-    frames = []  # for storing the generated images
-    fig = plt.figure()
-    fac=1
-    logfile = open('./dump.txt', 'w')
+    fig,ax = plt.subplots(1,1)
+    img = ax.imshow(obj.rho ** 0.5, cmap='inferno', animated=True)
 
-    try:
-        for i in range(1200):
+    no_labels = 9  # how many labels to see on axis x
+    step = int(NSIDE / (no_labels - 1))  # step between consecutive labels
+    positions = np.arange(0, NSIDE + 1, step)  # pixel count at label position
+    labels = -positions * RES + XMAX  # labels you want to see --- imshow plots origin at top
+    ax.set_yticks(positions, labels)
+    ax.set_xticks(positions, labels)
 
-            TE = obj.run_rk4(dt=TSTEP)
-            # print(obj.x)
 
-            if(i%10==0):
-                print(TE)
-                # print("iter", i)
-                # if (TE_old != 0):
-                #     # print(np.abs((TE-TE_old)/TE_old))
-                #     if (np.abs((TE - TE_old) / TE_old) > 0.005):
-                #         # plt.pause(10)
-                #         print('changing')
-                #         fac = fac * 2
-                    # print(np.abs((TE - TE_old) / TE_old))
-                #update TE_old=TE at the end
-                # print(obj.x)
-                logfile.write(str(TE)+"\n")
-                # plt.clf()
-                frames.append([plt.imshow(obj.rho[:NSIDE,:NSIDE]**0.5,cmap='inferno',animated=True)])
-                # plt.colorbar()
-                no_labels = 9  # how many labels to see on axis x
-                step = int(NSIDE / (no_labels - 1))  # step between consecutive labels
-                positions = np.arange(0, NSIDE + 1, step)  # pixel count at label position
-                labels = -positions*RES+XMAX  # labels you want to see --- imshow plots origin at top
-                plt.yticks(positions, labels)
-                plt.xticks(positions, labels)
-                plt.pause(0.01)
-    except KeyboardInterrupt as e:
-        pass
-    finally:
-        ani = animation.ArtistAnimation(fig, frames, interval=200, blit=True,
-                                        repeat_delay=500)
-        ani.save('./dump.gif', dpi=80, writer='imagemagick')
-        logfile.close()
+    anim = animation.FuncAnimation(fig, animate, init_func=init_anim, repeat=True, frames=400, interval=20, blit=True,
+                                   repeat_delay=1000)
+    anim.save('./dump.gif')
+
 
 
 
