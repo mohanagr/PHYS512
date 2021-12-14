@@ -10,16 +10,10 @@ np.random.seed(42)
 def get_grad(x,pot,RES,grad):
     nside = pot.shape[0]
     npart = x.shape[0]
-
     for i in nb.prange(npart):
         # print("Particle positions:", x[i])
         irow = int(nside /2 - x[i, 1]/RES)  # row num is given by y position up down
-        # but y made to vary 16 to -16 down. [0] is 16
         icol = int(nside /2 + x[i, 0]/RES)  # col num is given by x position left right
-        # print("In indices ffrom grad", irow, icol, "actually", rho[irow,icol])
-        # print(np.where(rho>0))
-        #         print("pot 1 term", pot[(ix+1)%nside,iy])
-        #         print("pot 2 term", pot[ix-1,iy])
         grad[i, 1] = -0.5 * (pot[(irow - 1), icol] - pot[(irow + 1) % nside, icol]) / RES
         # y decreases with high row num.
         grad[i, 0] = -0.5 * (pot[irow, (icol + 1) % nside] - pot[irow, icol - 1]) / RES
@@ -29,7 +23,7 @@ def get_grad(x,pot,RES,grad):
 def hist2d(x, mat, RES):
     # this is better than numpy.hist because of parallelization
     nside = mat.shape[0]
-    # temp = np.zeros((nside, nside))
+
     for i in nb.prange(x.shape[0]):
         irow = int(nside/2 - x[i, 1]/RES)
         icol = int(nside/2 + x[i, 0]/RES)
@@ -112,7 +106,6 @@ class nbody():
         self.kernelft = np.fft.rfft2(self.kernel)
 
     def ic_1part(self):
-        # place one particle at (0,0) with zero velocity
         self.x[0,0] = 0
         self.x[0,1] = 0
         self.v[0,0] = 0.2
@@ -135,7 +128,7 @@ class nbody():
     def ic_gauss(self):
         self.x[:] = np.random.randn(self.npart, 2) * self.XMAX / 4  # so that 95% within XMIN - XMAX
 
-    def ics_2gauss(self, vel):
+    def ic_2gauss(self, vel):
         self.x[:]=np.random.randn(self.npart,2)*self.XMAX/4
         self.x[:self.npart//2,1]=self.x[:self.npart//2,1]-self.XMAX/2.4
         self.x[self.npart//2:,1]=self.x[self.npart//2:,1]+self.XMAX/2.4
@@ -151,10 +144,10 @@ class nbody():
     def update_rho(self):
         enforce_period_nb(self.x,self.XMAX,self.XMIN)
         # self.rho, xedges, yedges = np.histogram2d(x[:, 1], x[:, 0], bins=bins)
-        # self.rho = np.flipud(self.rho).copy()
+
         self.rho[:] = 0
         hist2d(self.x,self.rho,self.RES)
-        # print(bins, self.RES)
+
         # we want y as top down, self.x as left right, and y starting 16 at top -16 at bottom
         self.rhoft = np.fft.rfft2(self.rho)
 
@@ -176,24 +169,27 @@ class nbody():
 
     def run_leapfrog2(self, dt=1, verbose=False):
         #initialize cur_f to use this version
-        self.x[:] = self.x[:] + dt * self.v[:] + self.cur_f * dt * dt /2
+        self.x[:] = self.x[:] + dt * self.v[:] + self.f * dt * dt /2
         self.update_pot()
-        self.new_f[:] = get_grad(self.x, self.pot, self.RES)
-        self.v[:] = self.v[:] + (self.cur_f + self.new_f)*dt/2
-        self.cur_f[:] = self.new_f[:]
+        get_grad(self.x, self.pot, self.RES,self.grad)
+        self.v[:] = self.v[:] + (self.f + self.grad)*dt/2
+        self.f[:] = self.grad
 
 def init_anim():
     img.set_data(np.zeros((1024,1024)))
     return img,
 
 def animate(i):
+
+    #PE = 0.5* np.sum(obj.pot * obj.rho) # USE THIS WHEN USING LEAPFROG2. comment PE1 and PE2. TE = KE+PE
+
     PE1 = 0.25 * np.sum(obj.pot * obj.rho)  # at 0 step
     KE=0.5*np.sum(obj.v**2) # at half step
     st = time()
     obj.run_leapfrog(dt=0.001)
     et = time()
     PE2 = 0.25 * np.sum(obj.pot * obj.rho)  # at 1 step
-    if(i%100==0):
+    if(i%10==0):
         print("FRAME:",i, et - st, PE1 + PE2 + KE)
     img.set_data(obj.rho**0.5)
 
@@ -213,16 +209,13 @@ if(__name__=="__main__"):
 
     # obj.ic_1part()
     # obj.ic_2part_circular()
-    # obj.run(dt=0)
-    # print(obj.grad)
-    v = np.sqrt(NPART*0.6/XMAX)
-    obj.ics_2gauss(50) #to use this change lims to +/- 128 and particles to 5000
+
+    obj.ic_2gauss(50) #to use this change lims to +/- 128 and particles to 5000
     # obj.ic_3part()
     # obj.ic_gauss()
     obj.update_pot()
-    # obj.cur_f[:] = get_gad(obj.x,obj.pot,obj.RES)
+    # obj.update_forces() # use this only when using leapfrog2, and change Energy condition in animate
 
-    frames = []  # for storing the generated images
     fig, ax = plt.subplots(1,1)
     fig.set_size_inches((6,6))
     img = ax.imshow(obj.rho ** 0.5,cmap='inferno',animated=True)
@@ -233,9 +226,13 @@ if(__name__=="__main__"):
     ax.set_yticks(positions, labels)
     ax.set_xticks(positions, labels)
 
-    anim = animation.FuncAnimation(fig, animate, init_func=init_anim, repeat=True,frames=4000, interval=20, blit=True, repeat_delay=1000)
     FFwriter = animation.FFMpegWriter(fps=40, extra_args=['-vcodec', 'libx264'])
-    anim.save('./dump.mp4',writer=FFwriter)
+    try:
+        anim = animation.FuncAnimation(fig, animate, init_func=init_anim, repeat=True,frames=4000, interval=20, blit=True, repeat_delay=1000)
+    except KeyboardInterrupt as e:
+        pass
+    finally:
+        anim.save('./dump.mp4',writer=FFwriter)
 
 
 
